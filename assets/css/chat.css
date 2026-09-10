@@ -9,6 +9,7 @@
   display: flex;
   flex-direction: column;
   gap: 18px;
+  /* 不再统一右留白，改为每条消息各自控制 */
 }
 
 /* ---------- 入场：从左侧滑出，慢而带质感 ---------- */
@@ -38,14 +39,22 @@
   }
 }
 
-.chat__row--ask { justify-content: flex-end; }
+/* ---------- 左右对称：回答靠左留右空，提问靠右留左空 ---------- */
 .chat__row--answer,
 .chat__row--profile,
-.chat__row--box { justify-content: flex-start; }
+.chat__row--box {
+  justify-content: flex-start;
+  padding-right: 160px;    /* 左侧气泡右留白 */
+}
+
+.chat__row--ask {
+  justify-content: flex-end;
+  padding-left: 160px;     /* 右侧气泡左留白，与左侧对称 */
+}
 
 /* ---------- 气泡基础 ---------- */
 .chat__bubble {
-  max-width: 82%;
+  max-width: 380px;
   padding: 14px 20px;
   border-radius: 16px;
   font-size: .95rem;
@@ -70,7 +79,7 @@
   align-items: center;
   gap: 16px;
   padding: 14px 24px 14px 14px;
-  max-width: none;
+  max-width: 420px;
 }
 
 .chat__avatar {
@@ -113,10 +122,11 @@
   transition: color .45s ease;
 }
 
-/* ---------- 信息框 ---------- */
+/* ---------- 信息框：宽度自适应内容，不换行 ---------- */
 .chat__bubble--box {
   padding: 18px 20px 20px;
-  max-width: 92%;
+  max-width: none;         /* 跟随内容宽度 */
+  width: fit-content;
 }
 
 .info-box__title {
@@ -129,24 +139,26 @@
   transition: color .45s ease;
 }
 
+/* 4 个按钮强制排成一行 */
 .info-box__list {
   display: flex;
-  flex-wrap: wrap;
+  flex-wrap: nowrap;       /* 关键：不换行 */
   gap: 8px;
 }
 
 .info-box__btn {
   font: inherit;
-  font-size: .86rem;
+  font-size: .82rem;
   font-weight: 500;
   color: var(--c-text);
   background: var(--c-surface-2);
   border: 1px solid var(--c-border-2);
   border-radius: 10px;
-  padding: 9px 18px;
+  padding: 8px 14px;
   cursor: pointer;
   text-decoration: none;
   display: inline-block;
+  white-space: nowrap;     /* 关键：按钮内文字不折行 */
   transition:
     background-color .2s ease,
     color .2s ease,
@@ -165,12 +177,21 @@
 /* ---------- 移动端精修 ---------- */
 @media (max-width: 720px) {
   .chat__stream { gap: 16px; }
+  .chat__row--answer,
+  .chat__row--profile,
+  .chat__row--box { padding-right: 120px; }
+  .chat__row--ask { padding-left: 120px; }
 }
 
 @media (max-width: 600px) {
   .chat__stream { gap: 14px; }
+  .chat__row--answer,
+  .chat__row--profile,
+  .chat__row--box { padding-right: 40px; }
+  .chat__row--ask { padding-left: 40px; }
+
   .chat__bubble {
-    max-width: 92%;
+    max-width: 100%;
     padding: 13px 17px;
     font-size: .93rem;
   }
@@ -181,22 +202,29 @@
   .chat__bubble--profile {
     padding: 12px 18px 12px 12px;
     gap: 14px;
+    max-width: 100%;
   }
   .chat__avatar { width: 46px; height: 46px; border-radius: 12px; }
   .chat__name { font-size: 1.16rem; }
-  .info-box__title { margin-bottom: 12px; }
-  .info-box__list { gap: 7px; }
-  .info-box__btn { font-size: .82rem; padding: 8px 15px; }
+
+  /* 手机上信息框按钮允许换行，否则会溢出 */
+  .info-box__list { flex-wrap: wrap; }
+  .info-box__btn { font-size: .8rem; padding: 7px 12px; }
 }
 
 @media (max-width: 400px) {
   .chat__stream { gap: 12px; }
+  .chat__row--answer,
+  .chat__row--profile,
+  .chat__row--box { padding-right: 24px; }
+  .chat__row--ask { padding-left: 24px; }
+
   .chat__bubble { font-size: .9rem; padding: 12px 15px; border-radius: 14px; }
   .chat__avatar { width: 42px; height: 42px; border-radius: 11px; }
   .chat__name { font-size: 1.08rem; }
   .chat__bubble--profile { padding: 11px 15px 11px 11px; gap: 12px; }
   .info-box__list { gap: 6px; }
-  .info-box__btn { font-size: .78rem; padding: 7px 13px; border-radius: 8px; }
+  .info-box__btn { font-size: .76rem; padding: 6px 11px; border-radius: 8px; }
 }
 
 @media (prefers-reduced-motion: reduce) {

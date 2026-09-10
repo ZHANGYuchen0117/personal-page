@@ -75,25 +75,26 @@
     color: var(--c-text);
   }
 
-  body {
-    font-family: -apple-system, BlinkMacSystemFont, 'PingFang SC', 'Microsoft YaHei', sans-serif;
-    min-height: 100vh;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    padding: 70px 24px 0;
-    line-height: 1.6;
-    -webkit-font-smoothing: antialiased;
-    transition: background-color .45s ease, color .45s ease;
-  }
+ body {
+  font-family: -apple-system, BlinkMacSystemFont, 'PingFang SC', 'Microsoft YaHei', sans-serif;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;      /* 改：让 .page 靠左 */
+  padding: 70px 24px 0 24px;
+  line-height: 1.6;
+  -webkit-font-smoothing: antialiased;
+  transition: background-color .45s ease, color .45s ease;
+}
 
-  .page {
-    width: 100%;
-    max-width: 720px;
-    flex: 1;
-    display: flex;
-    flex-direction: column;
-  }
+.page {
+  width: 100%;
+  max-width: 720px;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  /* 不写 margin，靠 body 的 align-items 控制 */
+}
 
   /* ---------- 页脚：修改日志 + 主题切换 ---------- */
   .page-foot {
