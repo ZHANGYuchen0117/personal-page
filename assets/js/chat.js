@@ -6,11 +6,18 @@
   const intro = data.introMessages || [];
   const menu = data.menuMessage || null;
   const contact = data.contactMessage || null;
+  const avatarSrc = data.avatar || '';
 
   const AVATAR_SVG =
-    '<svg viewBox="0 0 24 24" width="28" height="28" fill="currentColor" aria-hidden="true">' +
+    '<svg viewBox="0 0 24 24" width="26" height="26" fill="currentColor" aria-hidden="true">' +
     '<path d="M12 12a5 5 0 1 0 0-10 5 5 0 0 0 0 10Zm0 2c-4.42 0-8 2.24-8 5v1h16v-1c0-2.76-3.58-5-8-5Z"/>' +
     '</svg>';
+
+  function buildAvatarHtml(src) {
+    const fallback = '<span class="chat__avatar-fallback">' + AVATAR_SVG + '</span>';
+    if (!src) return fallback;
+    return '<img class="chat__avatar-img" src="' + src + '" alt="" />' + fallback;
+  }
 
   root.innerHTML =
     '<div class="chat">' +
@@ -19,7 +26,14 @@
 
   const stream = root.querySelector('#chatStream');
 
-  /* ---------- 通用：把一条消息塞进消息流 ---------- */
+  /* 头像加载失败时露出 fallback（error 事件不冒泡，用捕获） */
+  stream.addEventListener('error', function (e) {
+    const t = e.target;
+    if (t && t.classList && t.classList.contains('chat__avatar-img')) {
+      t.style.display = 'none';
+    }
+  }, true);
+
   function appendRow(modifier, html) {
     const row = document.createElement('div');
     row.className = 'chat__row chat__row--' + modifier;
@@ -31,16 +45,16 @@
     row.appendChild(bubble);
     stream.appendChild(row);
 
-    void row.offsetWidth;            // 强制重排，保证每次都能播放动画
+    void row.offsetWidth;
     row.classList.add('is-entering');
 
     stream.scrollTop = stream.scrollHeight;
     return row;
   }
 
-  /* ---------- 节奏控制 ---------- */
-  const START_DELAY = 280;   // 页面打开后，第一条延迟出现
-  const STEP = 900;          // 每条消息之间的间隔（越大越慢）
+  /* ---------- 节奏 ---------- */
+  const START_DELAY = 280;
+  const STEP = 900;
 
   let timeline = START_DELAY;
 
@@ -51,7 +65,7 @@
       if (msg.type === 'profile') {
         appendRow(
           'profile',
-          '<div class="chat__avatar">' + AVATAR_SVG + '</div>' +
+          '<div class="chat__avatar">' + buildAvatarHtml(avatarSrc) + '</div>' +
           '<div class="chat__name">' + (msg.name || data.name || '') + '</div>'
         );
       } else {
@@ -77,7 +91,6 @@
         '</div>'
       );
 
-      /* 点击菜单项 -> 提问气泡 + 回答气泡 */
       row.querySelectorAll('.info-box__btn').forEach(function (btn) {
         btn.addEventListener('click', function () {
           const idx = parseInt(btn.dataset.idx, 10);

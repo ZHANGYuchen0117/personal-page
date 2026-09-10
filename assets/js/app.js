@@ -1,14 +1,23 @@
 (function () {
   const data = window.PROFILE_DATA || {};
 
+  /* ---------- 主题切换 ---------- */
+  const themeBtn = document.querySelector('[data-toggle-theme]');
+  if (themeBtn) {
+    themeBtn.addEventListener('click', function () {
+      const cur = document.documentElement.getAttribute('data-theme');
+      const next = cur === 'dark' ? 'light' : 'dark';
+      document.documentElement.setAttribute('data-theme', next);
+      try { localStorage.setItem('theme', next); } catch (e) {}
+    });
+  }
+
+  /* ---------- 姓名 / 标语（如果页面其他位置也用到） ---------- */
   document.querySelectorAll('[data-profile="name"]').forEach(function (el) {
     el.textContent = data.name || el.textContent;
   });
 
-  document.querySelectorAll('[data-profile="tagline"]').forEach(function (el) {
-    el.textContent = data.tagline || el.textContent;
-  });
-
+  /* ---------- 修改日志弹窗 ---------- */
   const modal = document.getElementById('changelogModal');
   const sub = document.getElementById('changelogSub');
   const body = document.getElementById('changelogBody');
@@ -24,12 +33,12 @@
         return '<li class="' + (item.done ? 'is-done' : 'is-todo') + '">' + item.text + '</li>';
       }).join('');
 
-      return `
-        <section class="log-entry">
-          <h3 class="log-entry__title">${group.title}</h3>
-          <ul class="log-entry__list">${items}</ul>
-        </section>
-      `;
+      return (
+        '<section class="log-entry">' +
+          '<h3 class="log-entry__title">' + group.title + '</h3>' +
+          '<ul class="log-entry__list">' + items + '</ul>' +
+        '</section>'
+      );
     }).join('');
   }
 
@@ -46,9 +55,7 @@
     document.body.style.overflow = '';
   }
 
-  if (openBtn) {
-    openBtn.addEventListener('click', openModal);
-  }
+  if (openBtn) openBtn.addEventListener('click', openModal);
 
   if (modal) {
     modal.querySelectorAll('[data-close-modal]').forEach(function (el) {
@@ -57,8 +64,6 @@
   }
 
   document.addEventListener('keydown', function (e) {
-    if (e.key === 'Escape' && modal && !modal.hidden) {
-      closeModal();
-    }
+    if (e.key === 'Escape' && modal && !modal.hidden) closeModal();
   });
 })();
