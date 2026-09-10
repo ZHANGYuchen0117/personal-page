@@ -1,0 +1,166 @@
+/* ==========================================================
+ * 聊天组件样式 · 黑白灰高级灰调
+ * 无总边框，气泡直接浮在页面背景上
+ * ========================================================== */
+
+/* 容器什么都不画，只负责把消息排起来 */
+.chat {
+  /* 无边框 / 无背景 / 无阴影 —— 已按要求取消 */
+}
+
+.chat__stream {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+
+/* ---------- 入场：从网页左侧滑出，慢而带质感 ---------- */
+.chat__row {
+  display: flex;
+  opacity: 0;
+  will-change: transform, opacity, filter;
+}
+
+.chat__row.is-entering {
+  animation: bubbleIn 1s cubic-bezier(.16, 1, .3, 1) forwards;
+}
+
+@keyframes bubbleIn {
+  0% {
+    opacity: 0;
+    transform: translate3d(-48px, 0, 0) scale(.96);
+    filter: blur(6px);
+  }
+  60% {
+    opacity: 1;
+    filter: blur(0);
+    transform: translate3d(4px, 0, 0) scale(1.004);
+  }
+  100% {
+    opacity: 1;
+    transform: translate3d(0, 0, 0) scale(1);
+    filter: blur(0);
+  }
+}
+
+.chat__row--ask { justify-content: flex-end; }
+.chat__row--answer,
+.chat__row--profile,
+.chat__row--box { justify-content: flex-start; }
+
+/* ---------- 气泡基础（所有信息框共用同一套外观） ---------- */
+.chat__bubble {
+  max-width: 82%;
+  padding: 14px 20px;
+  border-radius: 16px;
+  font-size: .95rem;
+  line-height: 1.65;
+  color: #1a1a1a;
+  background: #ffffff;
+  border: 1px solid #e8e8e5;
+  box-shadow: 0 6px 22px rgba(0, 0, 0, .04);
+  word-break: break-word;
+}
+
+/* 提问气泡：更浅、更素 */
+.chat__bubble--ask {
+  background: #f7f7f5;
+  border-color: #ededeb;
+  box-shadow: none;
+}
+
+/* 第一条：头像 + 姓名 */
+.chat__bubble--profile {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 14px 24px 14px 14px;
+  max-width: none;
+}
+
+.chat__avatar {
+  width: 54px;
+  height: 54px;
+  border-radius: 14px;
+  background: #1a1a1a;
+  color: #fff;
+  display: grid;
+  place-items: center;
+  flex-shrink: 0;
+  box-shadow: 0 8px 20px rgba(0, 0, 0, .16);
+}
+
+.chat__name {
+  font-size: 1.32rem;
+  font-weight: 700;
+  color: #1a1a1a;
+  letter-spacing: -.02em;
+  line-height: 1.2;
+}
+
+/* ---------- 信息框：菜单 / 联系我 ---------- */
+.chat__bubble--box {
+  padding: 18px 20px 20px;
+  max-width: 92%;
+}
+
+.info-box__title {
+  font-size: .7rem;
+  font-weight: 700;
+  letter-spacing: .16em;
+  text-transform: uppercase;
+  color: #a6a6a3;
+  margin-bottom: 14px;
+}
+
+.info-box__list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+/* 信息框里的按钮 / 链接 —— 完全同一套样式 */
+.info-box__btn {
+  font: inherit;
+  font-size: .86rem;
+  font-weight: 500;
+  color: #1a1a1a;
+  background: #f4f4f2;
+  border: 1px solid #ececea;
+  border-radius: 10px;
+  padding: 9px 18px;
+  cursor: pointer;
+  text-decoration: none;
+  display: inline-block;
+  transition: background .2s ease, color .2s ease, border-color .2s ease, transform .2s ease;
+}
+
+.info-box__btn:hover {
+  background: #1a1a1a;
+  border-color: #1a1a1a;
+  color: #ffffff;
+  transform: translateY(-1px);
+}
+
+.info-box__btn:active {
+  transform: translateY(0);
+}
+
+/* 兼容旧的 chat__quick 类（如果其他页面还在用） */
+.chat__quick:empty { display: none; }
+
+/* ---------- 移动端 ---------- */
+@media (max-width: 600px) {
+  .chat__bubble { max-width: 92%; }
+  .chat__bubble--box { max-width: 100%; padding: 16px 16px 18px; }
+  .chat__bubble--profile { padding: 12px 18px 12px 12px; }
+  .chat__avatar { width: 46px; height: 46px; border-radius: 12px; }
+  .chat__name { font-size: 1.16rem; }
+  .info-box__btn { font-size: .82rem; padding: 8px 14px; }
+}
+
+/* ---------- 尊重"减少动效"偏好 ---------- */
+@media (prefers-reduced-motion: reduce) {
+  .chat__row.is-entering { animation: none; opacity: 1; }
+  .info-box__btn { transition: none; }
+}
