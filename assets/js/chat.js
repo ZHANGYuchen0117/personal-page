@@ -22,11 +22,16 @@
   root.innerHTML =
     '<div class="chat">' +
       '<div class="chat__stream" id="chatStream"></div>' +
+      '<div class="chat__input-bar">' +
+        '<input type="text" class="chat__input" placeholder="问点什么…" autocomplete="off" />' +
+        '<button type="button" class="chat__send">发送</button>' +
+      '</div>' +
     '</div>';
 
   const stream = root.querySelector('#chatStream');
+  const input = root.querySelector('.chat__input');
+  const sendBtn = root.querySelector('.chat__send');
 
-  /* 头像加载失败时露出 fallback（error 事件不冒泡，用捕获） */
   stream.addEventListener('error', function (e) {
     const t = e.target;
     if (t && t.classList && t.classList.contains('chat__avatar-img')) {
@@ -52,10 +57,50 @@
     return row;
   }
 
+  /* ---------- 统一发送逻辑：菜单点击 / 输入框发送 都走这里 ---------- */
+  function sendQuestion(questionText) {
+    if (!questionText) return;
+
+    appendRow('ask', questionText);
+
+    setTimeout(function () {
+      if (typeof callLLM === 'function') {
+        const answerRow = appendRow(
+          'answer',
+          '<span class="chat__thinking"><i></i><i></i><i></i></span>'
+        );
+        const bubble = answerRow.querySelector('.chat__bubble');
+        bubble.classList.add('chat__bubble--ai');
+
+        let started = false;
+
+        callLLM(
+          questionText,
+          function (chunk) {
+            if (!started) {
+              bubble.innerHTML = '';
+              started = true;
+            }
+            bubble.textContent += chunk;
+            stream.scrollTop = stream.scrollHeight;
+          },
+          function (fullText) {
+            bubble.textContent = fullText;
+          },
+          function (errMsg) {
+            bubble.textContent = '抱歉，' + errMsg;
+            bubble.classList.add('chat__bubble--error');
+          }
+        );
+      } else {
+        appendRow('answer', '（AI 未接入，请先配置 ai.js）');
+      }
+    }, 400);
+  }
+
   /* ---------- 节奏 ---------- */
   const START_DELAY = 280;
   const STEP = 900;
-
   let timeline = START_DELAY;
 
   /* ---------- 1~3：头像 + 两条标语 ---------- */
@@ -96,10 +141,7 @@
           const idx = parseInt(btn.dataset.idx, 10);
           const opt = menu.options[idx];
           if (!opt) return;
-          appendRow('ask', opt.label);
-          setTimeout(function () {
-            appendRow('answer', opt.answer);
-          }, 460);
+          sendQuestion(opt.prompt || opt.label);
         });
       });
     }, t);
@@ -124,4 +166,20 @@
     }, t);
     timeline += STEP;
   }
+
+  /* ---------- 输入框：点发送 或 按回车 ---------- */
+  function handleSend() {
+    const q = input.value.trim();
+    if (!q) return;
+    input.value = '';
+    sendQuestion(q);
+  }
+
+  sendBtn.addEventListener('click', handleSend);
+  input.addEventListener('keydown', function (e) {
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      handleSend();
+    }
+  });
 })();

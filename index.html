@@ -71,40 +71,49 @@
   * { margin: 0; padding: 0; box-sizing: border-box; }
 
   html, body {
-    background: var(--c-bg);
-    color: var(--c-text);
-  }
+  background: var(--c-bg);
+  color: var(--c-text);
+  height: 100%;
+  overflow: hidden;   /* 页面本身不滚动 */
+}
 
- body {
-  font-family: -apple-system, BlinkMacSystemFont, 'PingFang SC', 'Microsoft YaHei', sans-serif;
-  min-height: 100vh;
+body {
+  font-family: ...;
+  height: 100vh;
   display: flex;
   flex-direction: column;
-  align-items: flex-start;      /* 改：让 .page 靠左 */
-  padding: 70px 24px 0 24px;
+  align-items: center;
   line-height: 1.6;
   -webkit-font-smoothing: antialiased;
   transition: background-color .45s ease, color .45s ease;
+  /* padding 移到 .page 里 */
 }
 
 .page {
   width: 100%;
   max-width: 720px;
-  flex: 1;
+  height: 100vh;
+  padding: 40px 24px 0;
   display: flex;
   flex-direction: column;
-  /* 不写 margin，靠 body 的 align-items 控制 */
+  min-height: 0;
+}
+#chat-widget {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
 }
 
   /* ---------- 页脚：修改日志 + 主题切换 ---------- */
   .page-foot {
-    margin-top: auto;
-    padding: 80px 0 28px;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    gap: 6px;
-  }
+  flex-shrink: 0;
+  padding: 20px 0 24px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 6px;
+}
 
   .btn-changelog,
   .btn-theme {
@@ -309,7 +318,9 @@
   </div>
 </div>
 
+
 <script src="./assets/js/data.js"></script>
+<script src="./assets/js/ai.js"></script>     <!-- 新增，必须在 chat.js 之前 -->
 <script src="./assets/js/chat.js"></script>
 <script src="./assets/js/app.js"></script>
 

@@ -16,23 +16,27 @@ window.PROFILE_DATA = {
   menuMessage: {
     title: "了解更多",
     options: [
-      {
-        label: "关于我",
-        answer: "你好，我是张聿辰，目前就读于计算机科学与技术专业大一。我对 Web 开发、AI 应用和产品设计感兴趣。"
-      },
-      {
-        label: "当前技能",
-        answer: "HTML & CSS、Python 基础、Vibe Coding、UI/UX 设计、团队协作。"
-      },
-      {
-        label: "项目经历",
-        answer: "课程作业：个人主页 V1；新生创新项目：校园小程序需求调研与原型；自学笔记库：Markdown 知识管理。"
-      },
-      {
-        label: "下一步计划",
-        answer: "继续迭代 V2：真实头像、项目链接、排版优化和暗色模式。"
-      }
-    ]
+  {
+    label: '关于我',
+    prompt: '请用2-3句话介绍张聿辰，他是计算机科学与技术专业的大一学生，对Web开发、AI应用和产品设计感兴趣。',
+    answer: ''   // answer 不再用，留空即可
+  },
+  {
+    label: '当前技能',
+    prompt: '张聿辰目前掌握HTML & CSS、Python基础、Vibe Coding、UI/UX设计和团队协作。请用2-3句话概括他的技能。',
+    answer: ''
+  },
+  {
+    label: '项目经历',
+    prompt: '张聿辰做过三个项目：个人主页V1、校园小程序需求调研与原型、Markdown自学笔记库。请用2-3句话介绍。',
+    answer: ''
+  },
+  {
+    label: '下一步计划',
+    prompt: '张聿辰下一步计划迭代V2：替换真实头像、补充项目链接、优化排版、添加暗色模式。请用2-3句话说明。',
+    answer: ''
+  }
+]
   },
 
   /* 第五条：联系我信息框 */
