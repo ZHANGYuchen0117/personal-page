@@ -14,10 +14,29 @@
   flex: 1;
   min-height: 0;
   overflow-y: auto;
+   overflow-x: hidden;    /* 新增：彻底禁用横向滚动 */
   display: flex;
   flex-direction: column;
   gap: 18px;
-  padding-right: 4px;   /* 给滚动条一点空间 */
+  padding-right: 8px;
+  scrollbar-width: thin;
+  scrollbar-color: #ebe5d8 transparent;
+}
+
+
+/* 滚动条：米白色，细，紧贴最右 */
+.chat__stream::-webkit-scrollbar {
+  width: 6px;
+}
+.chat__stream::-webkit-scrollbar-track {
+  background: transparent;
+}
+.chat__stream::-webkit-scrollbar-thumb {
+  background: #ebe5d8;
+  border-radius: 999px;
+}
+.chat__stream::-webkit-scrollbar-thumb:hover {
+  background: #ddd6c8;
 }
 
 /* ---------- 入场：从左侧滑出，慢而带质感 ---------- */
@@ -32,13 +51,13 @@
 @keyframes bubbleIn {
   0% {
     opacity: 0;
-    transform: translate3d(-48px, 0, 0) scale(.96);
+    transform: translate3d(0, 28px, 0) scale(.96);
     filter: blur(6px);
   }
   60% {
     opacity: 1;
     filter: blur(0);
-    transform: translate3d(4px, 0, 0) scale(1.004);
+    transform: translate3d(0, -3px, 0) scale(1.004);
   }
   100% {
     opacity: 1;
@@ -58,7 +77,7 @@
 .chat__row--ask {
   justify-content: flex-end;
   padding-left: 160px;
-  margin-right: -32px;     /* 新增：再往右推 32px */
+  /* margin-right 删掉 */
 }
 
 /* ---------- 气泡基础 ---------- */

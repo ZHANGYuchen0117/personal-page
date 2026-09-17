@@ -93,7 +93,8 @@ body {
   width: 100%;
   max-width: 720px;
   height: 100vh;
-  padding: 40px 24px 0;
+  height: 100dvh;
+  padding: 40px 0 0 24px;      /* 右侧改为 0 */
   display: flex;
   flex-direction: column;
   min-height: 0;
@@ -108,7 +109,7 @@ body {
   /* ---------- 页脚：修改日志 + 主题切换 ---------- */
   .page-foot {
   flex-shrink: 0;
-  padding: 20px 0 24px;
+  padding: 20px 24px 24px 0;   /* 右侧补回 24px */
   display: flex;
   justify-content: center;
   align-items: center;

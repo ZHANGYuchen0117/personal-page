@@ -1,9 +1,7 @@
 // assets/js/ai.js
 const AI_CONFIG = {
-  endpoint: 'https://open.bigmodel.cn/api/paas/v4/chat/completions',
-  apiKey: '6c1ccc1919ca49b8bc3f2425f9b0a81a.Ic8HGvPrsGIMsUGS',   // 只写在这里，不要外传
-  model: 'glm-4-flash',
-  systemPrompt: '你是张聿辰个人主页的AI孪生。用简洁、友好、口语化的中文回答访客的问题。回答控制在2-3句话以内。'
+  endpoint: 'https://qnctdjwoylhfbqigqkje.supabase.co/functions/v1/llm-proxy',
+  anonKey: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InFuY3RkandveWxoZmJxaWdxa2plIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODk2MzAxODYsImV4cCI6MjEwNTIwNjE4Nn0.j6KMMpwOHU_hwAtL3WNYO7EbVsSwJ5ZhvWa1MhyG1l8'
 };
 
 async function callLLM(userMessage, onChunk, onDone, onError) {
@@ -12,17 +10,9 @@ async function callLLM(userMessage, onChunk, onDone, onError) {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'Authorization': 'Bearer ' + AI_CONFIG.apiKey
+        'Authorization': 'Bearer ' + AI_CONFIG.anonKey
       },
-      body: JSON.stringify({
-        model: AI_CONFIG.model,
-        messages: [
-          { role: 'system', content: AI_CONFIG.systemPrompt },
-          { role: 'user', content: userMessage }
-        ],
-        stream: true,
-        temperature: 0.7
-      })
+      body: JSON.stringify({ message: userMessage })
     });
 
     if (!response.ok) {
@@ -55,7 +45,7 @@ async function callLLM(userMessage, onChunk, onDone, onError) {
             fullText += delta;
             onChunk(delta);
           }
-        } catch (e) { /* 忽略单个 chunk 错误 */ }
+        } catch (e) {}
       }
     }
 
