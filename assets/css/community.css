@@ -1,0 +1,165 @@
+/* ==========================================================
+ * 社区聊天弹窗
+ * ========================================================== */
+
+#communityModal .modal__panel {
+  width: min(600px, 100%);
+  max-height: 78vh;
+  display: flex;
+  flex-direction: column;
+  padding: 28px 28px 24px;
+}
+
+.community__list {
+  flex: 1;
+  min-height: 200px;
+  max-height: 52vh;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 6px 8px 6px 0;
+  margin-bottom: 16px;
+  scrollbar-width: thin;
+  scrollbar-color: var(--c-surface-3) transparent;
+}
+.community__list::-webkit-scrollbar { width: 6px; }
+.community__list::-webkit-scrollbar-track { background: transparent; }
+.community__list::-webkit-scrollbar-thumb {
+  background: var(--c-surface-3);
+  border-radius: 999px;
+}
+
+.community__msg {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  max-width: 88%;
+  padding: 10px 14px;
+  border-radius: 14px;
+  background: var(--c-surface-2);
+  border: 1px solid var(--c-border-2);
+  align-self: flex-start;
+  transition: background-color .3s ease, transform .24s cubic-bezier(.16, 1, .3, 1);
+  animation: communityMsgIn .45s cubic-bezier(.16, 1, .3, 1) both;
+}
+.community__msg:hover {
+  transform: translateX(2px);
+}
+
+.community__msg.is-me {
+  align-self: flex-end;
+  background: var(--c-invert-bg);
+  border-color: var(--c-invert-bg);
+  color: var(--c-invert-fg);
+}
+
+@keyframes communityMsgIn {
+  from { opacity: 0; transform: translateY(8px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+.community__nick {
+  font-size: .72rem;
+  font-weight: 700;
+  letter-spacing: .06em;
+  color: var(--c-text-3);
+}
+.community__msg.is-me .community__nick {
+  color: var(--c-invert-fg);
+  opacity: .6;
+}
+
+.community__text {
+  font-size: .92rem;
+  line-height: 1.55;
+  word-break: break-word;
+  white-space: pre-wrap;
+}
+
+.community__empty {
+  text-align: center;
+  color: var(--c-text-3);
+  font-size: .86rem;
+  padding: 40px 0;
+}
+
+.community__compose {
+  flex-shrink: 0;
+  display: flex;
+  gap: 8px;
+  padding-top: 14px;
+  border-top: 1px solid var(--c-border-2);
+}
+
+.community__nickname {
+  font: inherit;
+  font-size: .84rem;
+  color: var(--c-text);
+  background: var(--c-surface-2);
+  border: 1px solid var(--c-border-2);
+  border-radius: 10px;
+  padding: 9px 12px;
+  width: 90px;
+  outline: none;
+  transition: border-color .2s, transform .24s cubic-bezier(.16, 1, .3, 1);
+}
+.community__nickname:focus {
+  border-color: var(--c-text-3);
+  transform: translateY(-1px);
+}
+
+.community__input {
+  flex: 1;
+  min-width: 0;
+  font: inherit;
+  font-size: .9rem;
+  color: var(--c-text);
+  background: var(--c-surface-2);
+  border: 1px solid var(--c-border-2);
+  border-radius: 10px;
+  padding: 9px 14px;
+  outline: none;
+  transition: border-color .2s, transform .24s cubic-bezier(.16, 1, .3, 1);
+}
+.community__input:focus {
+  border-color: var(--c-text-3);
+  transform: translateY(-1px);
+}
+.community__input::placeholder,
+.community__nickname::placeholder {
+  color: var(--c-text-3);
+}
+
+.community__send {
+  font: inherit;
+  font-size: .86rem;
+  font-weight: 600;
+  color: var(--c-invert-fg);
+  background: var(--c-invert-bg);
+  border: none;
+  border-radius: 10px;
+  padding: 9px 20px;
+  cursor: pointer;
+  flex-shrink: 0;
+  transition: opacity .2s, transform .24s cubic-bezier(.16, 1, .3, 1);
+}
+.community__send:hover { transform: translateY(-1px); }
+.community__send:active { transform: translateY(0) scale(.97); }
+.community__send:disabled { opacity: .45; cursor: not-allowed; }
+
+.community__status {
+  font-size: .78rem;
+  color: var(--c-text-3);
+  text-align: center;
+  margin-top: 8px;
+  min-height: 1em;
+}
+
+@media (max-width: 600px) {
+  #communityModal .modal__panel { padding: 22px 20px 20px; }
+  .community__msg { max-width: 92%; }
+  .community__nickname { width: 70px; font-size: .8rem; }
+  .community__input { font-size: .86rem; padding: 8px 12px; }
+  .community__send { padding: 8px 14px; font-size: .8rem; }
+}

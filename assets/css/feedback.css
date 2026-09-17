@@ -1,0 +1,105 @@
+/* ==========================================================
+ * 反馈表单样式
+ * ========================================================== */
+
+.fb-field { margin-bottom: 20px; }
+
+.fb-field > label {
+  display: block;
+  font-size: .7rem;
+  font-weight: 700;
+  letter-spacing: .16em;
+  text-transform: uppercase;
+  color: var(--c-text-3);
+  margin-bottom: 10px;
+}
+
+.fb-chips {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.fb-chip {
+  font: inherit;
+  font-size: .84rem;
+  font-weight: 500;
+  color: var(--c-text);
+  background: var(--c-surface-2);
+  border: 1px solid var(--c-border-2);
+  border-radius: 999px;
+  padding: 7px 18px;
+  cursor: pointer;
+  transition: background .18s, color .18s, border-color .18s;
+}
+
+.fb-chip:hover { border-color: var(--c-text-3); }
+
+.fb-chip.is-active {
+  background: var(--c-invert-bg);
+  border-color: var(--c-invert-bg);
+  color: var(--c-invert-fg);
+}
+
+.fb-field textarea,
+.fb-field input[type="text"] {
+  width: 100%;
+  font: inherit;
+  font-size: .92rem;
+  line-height: 1.6;
+  color: var(--c-text);
+  background: var(--c-surface-2);
+  border: 1px solid var(--c-border-2);
+  border-radius: 12px;
+  padding: 12px 14px;
+  outline: none;
+  resize: vertical;
+  transition: border-color .2s, background .45s ease;
+}
+
+.fb-field textarea { min-height: 110px; }
+.fb-field textarea::placeholder,
+.fb-field input[type="text"]::placeholder { color: var(--c-text-3); }
+
+.fb-field textarea:focus,
+.fb-field input[type="text"]:focus { border-color: var(--c-text-3); }
+
+.fb-honey {
+  position: absolute;
+  left: -9999px;
+  width: 1px;
+  height: 1px;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.fb-submit {
+  width: 100%;
+  font: inherit;
+  font-size: .92rem;
+  font-weight: 600;
+  color: var(--c-invert-fg);
+  background: var(--c-invert-bg);
+  border: none;
+  border-radius: 12px;
+  padding: 12px 20px;
+  cursor: pointer;
+  margin-top: 4px;
+  transition: opacity .2s, transform .2s;
+}
+
+.fb-submit:hover:not(:disabled) { opacity: .86; }
+.fb-submit:active:not(:disabled) { transform: scale(.99); }
+.fb-submit:disabled { opacity: .45; cursor: not-allowed; }
+
+.fb-status {
+  font-size: .84rem;
+  color: var(--c-text-3);
+  text-align: center;
+  margin-top: 14px;
+  min-height: 1.2em;
+}
+.fb-status.is-ok { color: var(--c-text); }
+.fb-status.is-err { color: #b45a4a; }
+
+:root[data-theme="dark"] .fb-status.is-err { color: #e08b7c; }

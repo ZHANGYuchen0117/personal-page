@@ -351,3 +351,53 @@
   .info-box__btn { transition: none; }
   .chat__bubble, .chat__avatar, .chat__name, .info-box__title { transition: none; }
 }
+/* ---------- V2.0 图标微动效 ---------- */
+
+/* 头像：悬停轻微放大，阴影加深 */
+.chat__avatar {
+  transition: transform .28s cubic-bezier(.16, 1, .3, 1),
+              box-shadow .28s ease,
+              background-color .45s ease,
+              color .45s ease;
+}
+.chat__avatar:hover {
+  transform: scale(1.05) rotate(-1.5deg);
+  box-shadow: 0 12px 28px var(--c-shadow-sm);
+}
+
+/* 信息框按钮：悬停轻微抬起 */
+.info-box__btn {
+  transition: background-color .2s ease,
+              color .2s ease,
+              border-color .2s ease,
+              transform .24s cubic-bezier(.16, 1, .3, 1),
+              box-shadow .24s ease;
+}
+.info-box__btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 14px var(--c-shadow-sm);
+}
+
+/* 输入框聚焦：轻微上抬 */
+.chat__input {
+  transition: border-color .2s,
+              transform .24s cubic-bezier(.16, 1, .3, 1),
+              background-color .45s ease;
+}
+.chat__input:focus {
+  border-color: var(--c-text-3);
+  transform: translateY(-1px);
+}
+
+/* 发送按钮：悬停轻微放大 */
+.chat__send {
+  transition: opacity .2s,
+              transform .24s cubic-bezier(.16, 1, .3, 1),
+              background-color .45s ease;
+}
+.chat__send:hover {
+  transform: scale(1.04);
+}
+.chat__send:active {
+  transform: scale(.97);
+}

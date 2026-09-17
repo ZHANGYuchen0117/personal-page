@@ -25,6 +25,8 @@
 </script>
 
 <link rel="stylesheet" href="./assets/css/chat.css">
+<link rel="stylesheet" href="./assets/css/feedback.css">
+<link rel="stylesheet" href="./assets/css/community.css">
 
 <style>
   /* ==========================================================
@@ -278,6 +280,46 @@ body {
     body, .chat__bubble, .chat__avatar { transition: none; }
     .modal__panel { animation: none; }
   }
+  /* ---------- V2.0 页脚图标微动效 ---------- */
+
+.btn-changelog,
+.btn-theme {
+  transition: color .2s, background .2s, transform .24s cubic-bezier(.16, 1, .3, 1);
+}
+.btn-changelog:hover {
+  transform: translateY(-1px);
+}
+.btn-changelog:active {
+  transform: translateY(0) scale(.97);
+}
+
+.btn-theme:hover {
+  transform: scale(1.08) rotate(-6deg);
+}
+.btn-theme:active {
+  transform: scale(.94);
+}
+
+/* 弹窗关闭按钮：悬停旋转 */
+.modal__close {
+  transition: background .18s, color .18s, transform .28s cubic-bezier(.16, 1, .3, 1);
+}
+.modal__close:hover {
+  background: var(--c-surface-3);
+  color: var(--c-text);
+  transform: rotate(90deg);
+}
+.modal__close:active {
+  transform: rotate(90deg) scale(.9);
+}
+
+/* 反馈/社区提交按钮 */
+.fb-submit {
+  transition: opacity .2s, transform .24s cubic-bezier(.16, 1, .3, 1);
+}
+.fb-submit:hover:not(:disabled) {
+  transform: translateY(-1px);
+}
 </style>
 </head>
 
@@ -288,7 +330,9 @@ body {
   <section id="chat-widget" aria-label="对话式个人主页"></section>
 
   <footer class="page-foot">
-    <button type="button" class="btn-changelog" data-open-changelog>修改日志</button>
+  <button type="button" class="btn-changelog" data-open-community>社区</button>
+  <button type="button" class="btn-changelog" data-open-feedback>反馈</button>
+  <button type="button" class="btn-changelog" data-open-changelog>修改日志</button>
     <button type="button" class="btn-theme" data-toggle-theme aria-label="切换主题">
       <svg class="icon-moon" viewBox="0 0 24 24" width="15" height="15" fill="none"
            stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
@@ -318,10 +362,80 @@ body {
     <div id="changelogBody"></div>
   </div>
 </div>
+<!-- ===== 反馈弹窗 ===== -->
+<div class="modal" id="feedbackModal" hidden>
+  <div class="modal__mask" data-close-feedback></div>
+  <div class="modal__panel" role="dialog" aria-modal="true" aria-labelledby="feedbackTitle">
+    <button type="button" class="modal__close" data-close-feedback aria-label="关闭">
+      <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor"
+           stroke-width="2.4" stroke-linecap="round">
+        <path d="M6 6l12 12M18 6L6 18"/>
+      </svg>
+    </button>
+    <h2 class="modal__title" id="feedbackTitle">反馈</h2>
+    <p class="modal__sub">说点什么，我都会看到</p>
+
+    <form id="feedbackForm" novalidate>
+      <div class="fb-field">
+        <label>类型</label>
+        <div class="fb-chips">
+          <button type="button" class="fb-chip is-active" data-type="建议">建议</button>
+          <button type="button" class="fb-chip" data-type="问题">问题</button>
+          <button type="button" class="fb-chip" data-type="其他">其他</button>
+        </div>
+      </div>
+
+      <div class="fb-field">
+        <label for="fbContent">内容</label>
+        <textarea id="fbContent" rows="5" placeholder="写点什么…" maxlength="2000"></textarea>
+      </div>
+
+      <div class="fb-field">
+        <label for="fbContact">联系方式（可选）</label>
+        <input type="text" id="fbContact" placeholder="邮箱 / 微信 / 其他" maxlength="200">
+      </div>
+
+      <input class="fb-honey" type="text" name="website" tabindex="-1" autocomplete="off">
+
+      <button type="submit" class="fb-submit">提交</button>
+      <p class="fb-status" id="fbStatus"></p>
+    </form>
+  </div>
+</div>
+<!-- ===== 社区弹窗 ===== -->
+<div class="modal" id="communityModal" hidden>
+  <div class="modal__mask" data-close-community></div>
+  <div class="modal__panel" role="dialog" aria-modal="true" aria-labelledby="communityTitle">
+    <button type="button" class="modal__close" data-close-community aria-label="关闭">
+      <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor"
+           stroke-width="2.4" stroke-linecap="round">
+        <path d="M6 6l12 12M18 6L6 18"/>
+      </svg>
+    </button>
+    <h2 class="modal__title" id="communityTitle">社区</h2>
+    <p class="modal__sub">路过留句话</p>
+
+    <div class="community__list" id="communityList">
+      <div class="community__empty">还没有消息，说点什么吧</div>
+    </div>
+
+    <div class="community__compose">
+      <input type="text" class="community__nickname" id="communityNickname"
+             placeholder="昵称" maxlength="20" autocomplete="off">
+      <input type="text" class="community__input" id="communityInput"
+             placeholder="说点什么…" maxlength="500" autocomplete="off">
+      <button type="button" class="community__send" id="communitySend">发送</button>
+    </div>
+    <p class="community__status" id="communityStatus"></p>
+  </div>
+</div>
 
 
 <script src="./assets/js/data.js"></script>
-<script src="./assets/js/ai.js"></script>     <!-- 新增，必须在 chat.js 之前 -->
+<script src="./assets/js/supabase-config.js"></script>
+<script src="./assets/js/feedback.js"></script>
+<script src="./assets/js/community.js"></script>
+<script src="./assets/js/ai.js"></script>
 <script src="./assets/js/chat.js"></script>
 <script src="./assets/js/app.js"></script>
 
