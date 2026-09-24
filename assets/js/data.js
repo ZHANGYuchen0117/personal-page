@@ -58,7 +58,8 @@ window.PROFILE_DATA = {
           { text: "反馈入口 + 云端数据库", done: true },
           { text: "社区交流功能", done: true },
           { text: "图标悬停微动效", done: true },
-          { text: "社区注册：昵称、手机号、邮箱、头像", done: true }
+          { text: "社区注册：昵称、手机号、邮箱、头像", done: true },
+          { text: "注册写入兼容数据库只读策略，注册即可用", done: true }
         ]
       },
       {

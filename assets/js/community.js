@@ -278,6 +278,28 @@
     });
   }
 
+  /* ---------- 生成用户 ID ----------
+   * community_users 表不开放读取（保护手机号 / 邮箱），
+   * 所以注册时用 return=minimal，ID 由客户端生成（uuid v4）。 */
+  function uuidv4() {
+    if (window.crypto && typeof crypto.randomUUID === 'function') {
+      return crypto.randomUUID();
+    }
+    const bytes = new Uint8Array(16);
+    if (window.crypto && typeof crypto.getRandomValues === 'function') {
+      crypto.getRandomValues(bytes);
+    } else {
+      for (let i = 0; i < 16; i++) bytes[i] = Math.floor(Math.random() * 256);
+    }
+    bytes[6] = (bytes[6] & 0x0f) | 0x40;
+    bytes[8] = (bytes[8] & 0x3f) | 0x80;
+    const hex = Array.prototype.map.call(bytes, function (b) {
+      return ('0' + b.toString(16)).slice(-2);
+    }).join('');
+    return hex.slice(0, 8) + '-' + hex.slice(8, 12) + '-' + hex.slice(12, 16) +
+           '-' + hex.slice(16, 20) + '-' + hex.slice(20);
+  }
+
   /* ---------- 注册提交 ---------- */
   regAvatarInput.addEventListener('change', async function () {
     const file = regAvatarInput.files && regAvatarInput.files[0];
@@ -323,6 +345,8 @@
     regStatus.textContent = '注册中…';
     regStatus.className = 'fb-status';
 
+    const userId = uuidv4();
+
     try {
       const res = await fetch(cfg.url + '/rest/v1/community_users', {
         method: 'POST',
@@ -330,9 +354,10 @@
           'Content-Type': 'application/json',
           'apikey': cfg.anonKey,
           'Authorization': 'Bearer ' + cfg.anonKey,
-          'Prefer': 'return=representation'
+          'Prefer': 'return=minimal'
         },
         body: JSON.stringify({
+          id: userId,
           name: name,
           phone: phone,
           email: email,
@@ -342,14 +367,10 @@
 
       if (!res.ok) throw new Error('HTTP ' + res.status);
 
-      const rows = await res.json();
-      const user = rows && rows[0];
-      if (!user || !user.id) throw new Error('注册返回异常');
-
       currentUser = {
-        id: user.id,
-        name: user.name,
-        avatar: user.avatar || null
+        id: userId,
+        name: name,
+        avatar: pendingAvatar || null
       };
       saveUser(currentUser);
       updateUI();
