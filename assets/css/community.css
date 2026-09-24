@@ -22,13 +22,20 @@
   padding: 6px 8px 6px 0;
   margin-bottom: 16px;
   scrollbar-width: thin;
-  scrollbar-color: var(--c-surface-3) transparent;
+  scrollbar-color: var(--c-scroll-thumb, #deddd9) transparent;
 }
-.community__list::-webkit-scrollbar { width: 6px; }
+.community__list::-webkit-scrollbar { width: 10px; }
 .community__list::-webkit-scrollbar-track { background: transparent; }
 .community__list::-webkit-scrollbar-thumb {
-  background: var(--c-surface-3);
+  background: var(--c-scroll-thumb, #deddd9);
+  border: 2px solid transparent;
+  background-clip: padding-box;
   border-radius: 999px;
+}
+.community__list::-webkit-scrollbar-thumb:hover {
+  background: var(--c-scroll-thumb-hover, #cbcac6);
+  border: 2px solid transparent;
+  background-clip: padding-box;
 }
 
 .community__empty {

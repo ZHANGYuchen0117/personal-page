@@ -48,6 +48,9 @@
     --c-mask: rgba(10, 10, 10, .36);
     --c-shadow-sm: rgba(0, 0, 0, .04);
     --c-shadow-lg: rgba(0, 0, 0, .2);
+    /* 滚动条：比背景略深一点点 */
+    --c-scroll-thumb: #deddd9;
+    --c-scroll-thumb-hover: #cbcac6;
     --c-check-icon: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23ffffff' stroke-width='4' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='20 6 9 17 4 12'/%3E%3C/svg%3E");
   }
 
@@ -66,6 +69,9 @@
     --c-mask: rgba(0, 0, 0, .66);
     --c-shadow-sm: rgba(0, 0, 0, .3);
     --c-shadow-lg: rgba(0, 0, 0, .55);
+    /* 滚动条：暗色下用略亮一点的灰，保证可见 */
+    --c-scroll-thumb: #333331;
+    --c-scroll-thumb-hover: #454442;
     --c-check-icon: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23141413' stroke-width='4' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='20 6 9 17 4 12'/%3E%3C/svg%3E");
   }
 
@@ -93,10 +99,19 @@
     width: 100%;
     max-width: 720px;
     height: 100vh;
+    height: 100dvh;
     padding: 40px 0 0 24px;
     display: flex;
     flex-direction: column;
     min-height: 0;
+  }
+
+  /* 对话装置：必须限制高度，否则消息一多就会把页面撑长、滚不到最新消息 */
+  #chat-widget {
+    flex: 1;
+    min-height: 0;
+    display: flex;
+    flex-direction: column;
   }
 
   /* ---------- 页脚 ---------- */
@@ -277,9 +292,18 @@
     .modal__panel { padding: 22px 18px 24px; }
   }
 
+  /* 反馈 / 注册提交按钮：悬停轻抬（V2.0 微动效） */
+  .fb-submit {
+    transition: opacity .2s, transform .24s cubic-bezier(.16, 1, .3, 1);
+  }
+  .fb-submit:hover:not(:disabled) {
+    transform: translateY(-1px);
+  }
+
   @media (prefers-reduced-motion: reduce) {
     body, .chat__bubble, .chat__avatar { transition: none; }
     .modal__panel { animation: none; }
+    .fb-submit { transition: none; }
   }
 </style>
 </head>

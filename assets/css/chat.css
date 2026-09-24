@@ -18,25 +18,30 @@
   display: flex;
   flex-direction: column;
   gap: 18px;
-  padding-right: 8px;
+  padding-right: 10px;
+  /* 滚动条常显：颜色比背景略深一点点（跟随主题变量） */
   scrollbar-width: thin;
-  scrollbar-color: #ebe5d8 transparent;
+  scrollbar-color: var(--c-scroll-thumb, #deddd9) transparent;
 }
 
 
-/* 滚动条：米白色，细，紧贴最右 */
+/* 滚动条：位于对话区最右侧，常显、可拖动，颜色比背景略深 */
 .chat__stream::-webkit-scrollbar {
-  width: 6px;
+  width: 10px;
 }
 .chat__stream::-webkit-scrollbar-track {
   background: transparent;
 }
 .chat__stream::-webkit-scrollbar-thumb {
-  background: #ebe5d8;
+  background: var(--c-scroll-thumb, #deddd9);
+  border: 2px solid transparent;      /* 两侧留白，滑块更细 */
+  background-clip: padding-box;
   border-radius: 999px;
 }
 .chat__stream::-webkit-scrollbar-thumb:hover {
-  background: #ddd6c8;
+  background: var(--c-scroll-thumb-hover, #cbcac6);
+  border: 2px solid transparent;
+  background-clip: padding-box;
 }
 
 /* ---------- 入场：从左侧滑出，慢而带质感 ---------- */
