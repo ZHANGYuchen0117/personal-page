@@ -46,33 +46,27 @@ window.PROFILE_DATA = {
     label: "发送邮件"
   },
 
-  changelog: {
+    changelog: {
     date: "2026年9月",
-    version: "V1.4",
+    version: "V2.1",
     groups: [
       {
         title: "已完成",
         items: [
-          { text: "移除页面中的表情符号", done: true },
-          { text: "聊天组件拆分为独立文件", done: true },
-          { text: "修复修改日志弹窗", done: true },
-          { text: "姓名头像改为首条消息，标语拆成两条依次滑出", done: true },
-          { text: "减速入场动画，加入模糊与缩放的质感", done: true },
-          { text: "取消总边框，改为从网页左侧滑出", done: true },
-          { text: "菜单与联系方式统一为信息框形式", done: true },
-          { text: "配色切换为黑白灰高级灰调", done: true },
-          { text: "添加暗色模式切换，跟随系统并可手动记忆", done: true },
-          { text: "移动端间距全面精修", done: true },
-          { text: "头像支持真实照片，未提供时回退到矢量图", done: true }
+          { text: "聊天式个人主页 V1 系列", done: true },
+          { text: "接入 AI 自由提问", done: true },
+          { text: "反馈入口 + 云端数据库", done: true },
+          { text: "社区交流功能", done: true },
+          { text: "图标悬停微动效", done: true },
+          { text: "社区注册：昵称、手机号、邮箱、头像", done: true }
         ]
       },
       {
-        title: "V2 待办",
+        title: "V2.2 待办",
         items: [
-          { text: "补充真实项目链接（GitHub / 报告）", done: false },
-          { text: "给页面加一个简短的进入过场", done: false },
-          { text: "尝试横向滑入与纵向错落结合的节奏", done: false },
-          { text: "导出为可分享的单文件版本", done: false }
+          { text: "头像上传改走 Supabase Storage", done: false },
+          { text: "消息实时推送（Realtime）", done: false },
+          { text: "社区消息分页加载", done: false }
         ]
       }
     ]

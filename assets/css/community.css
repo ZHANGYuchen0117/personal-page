@@ -1,23 +1,24 @@
-/* ==========================================================
- * 社区聊天弹窗
+//* ==========================================================
+ * 社区 V2.1：注册 + 聊天
  * ========================================================== */
 
 #communityModal .modal__panel {
-  width: min(600px, 100%);
-  max-height: 78vh;
+  width: min(620px, 100%);
+  max-height: 82vh;
   display: flex;
   flex-direction: column;
   padding: 28px 28px 24px;
 }
 
+/* ---------- 消息列表 ---------- */
 .community__list {
   flex: 1;
-  min-height: 200px;
+  min-height: 220px;
   max-height: 52vh;
   overflow-y: auto;
   display: flex;
   flex-direction: column;
-  gap: 12px;
+  gap: 14px;
   padding: 6px 8px 6px 0;
   margin-bottom: 16px;
   scrollbar-width: thin;
@@ -30,28 +31,23 @@
   border-radius: 999px;
 }
 
-.community__msg {
-  display: flex;
-  flex-direction: column;
-  gap: 3px;
-  max-width: 88%;
-  padding: 10px 14px;
-  border-radius: 14px;
-  background: var(--c-surface-2);
-  border: 1px solid var(--c-border-2);
-  align-self: flex-start;
-  transition: background-color .3s ease, transform .24s cubic-bezier(.16, 1, .3, 1);
-  animation: communityMsgIn .45s cubic-bezier(.16, 1, .3, 1) both;
-}
-.community__msg:hover {
-  transform: translateX(2px);
+.community__empty {
+  text-align: center;
+  color: var(--c-text-3);
+  font-size: .86rem;
+  padding: 40px 0;
 }
 
+.community__msg {
+  display: flex;
+  gap: 10px;
+  max-width: 86%;
+  align-self: flex-start;
+  animation: communityMsgIn .45s cubic-bezier(.16, 1, .3, 1) both;
+}
 .community__msg.is-me {
   align-self: flex-end;
-  background: var(--c-invert-bg);
-  border-color: var(--c-invert-bg);
-  color: var(--c-invert-fg);
+  flex-direction: row-reverse;
 }
 
 @keyframes communityMsgIn {
@@ -59,10 +55,39 @@
   to   { opacity: 1; transform: translateY(0); }
 }
 
+.community__msg-avatar {
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  object-fit: cover;
+  flex-shrink: 0;
+  background: var(--c-surface-3);
+  transition: transform .24s cubic-bezier(.16, 1, .3, 1);
+}
+.community__msg:hover .community__msg-avatar {
+  transform: scale(1.08);
+}
+
+.community__msg-body {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  padding: 8px 14px;
+  border-radius: 14px;
+  background: var(--c-surface-2);
+  border: 1px solid var(--c-border-2);
+  transition: background-color .3s ease;
+}
+.community__msg.is-me .community__msg-body {
+  background: var(--c-invert-bg);
+  border-color: var(--c-invert-bg);
+  color: var(--c-invert-fg);
+}
+
 .community__nick {
   font-size: .72rem;
   font-weight: 700;
-  letter-spacing: .06em;
+  letter-spacing: .04em;
   color: var(--c-text-3);
 }
 .community__msg.is-me .community__nick {
@@ -77,36 +102,68 @@
   white-space: pre-wrap;
 }
 
-.community__empty {
+/* ---------- 未注册状态 ---------- */
+.community__guest {
   text-align: center;
-  color: var(--c-text-3);
-  font-size: .86rem;
-  padding: 40px 0;
+  padding: 22px 20px;
+  background: var(--c-surface-2);
+  border: 1px dashed var(--c-border-2);
+  border-radius: 14px;
+  margin-bottom: 14px;
 }
+.community__guest p {
+  font-size: .9rem;
+  color: var(--c-text-3);
+  margin-bottom: 14px;
+}
+.community__register-btn {
+  font: inherit;
+  font-size: .88rem;
+  font-weight: 600;
+  color: var(--c-invert-fg);
+  background: var(--c-invert-bg);
+  border: none;
+  border-radius: 10px;
+  padding: 9px 26px;
+  cursor: pointer;
+  transition: opacity .2s, transform .24s cubic-bezier(.16, 1, .3, 1);
+}
+.community__register-btn:hover { transform: translateY(-1px); }
+.community__register-btn:active { transform: translateY(0) scale(.97); }
 
+/* ---------- 已注册：输入区 ---------- */
 .community__compose {
   flex-shrink: 0;
   display: flex;
-  gap: 8px;
+  align-items: center;
+  gap: 10px;
   padding-top: 14px;
   border-top: 1px solid var(--c-border-2);
 }
 
-.community__nickname {
-  font: inherit;
-  font-size: .84rem;
-  color: var(--c-text);
-  background: var(--c-surface-2);
-  border: 1px solid var(--c-border-2);
-  border-radius: 10px;
-  padding: 9px 12px;
-  width: 90px;
-  outline: none;
-  transition: border-color .2s, transform .24s cubic-bezier(.16, 1, .3, 1);
+.community__me {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  flex-shrink: 0;
+  padding-right: 10px;
+  border-right: 1px solid var(--c-border-2);
+  max-width: 140px;
 }
-.community__nickname:focus {
-  border-color: var(--c-text-3);
-  transform: translateY(-1px);
+.community__me img {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  object-fit: cover;
+  flex-shrink: 0;
+}
+.community__me span {
+  font-size: .82rem;
+  font-weight: 600;
+  color: var(--c-text);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .community__input {
@@ -126,10 +183,7 @@
   border-color: var(--c-text-3);
   transform: translateY(-1px);
 }
-.community__input::placeholder,
-.community__nickname::placeholder {
-  color: var(--c-text-3);
-}
+.community__input::placeholder { color: var(--c-text-3); }
 
 .community__send {
   font: inherit;
@@ -156,10 +210,69 @@
   min-height: 1em;
 }
 
+.community__logout {
+  font: inherit;
+  font-size: .74rem;
+  color: var(--c-text-3);
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  padding: 4px 8px;
+  border-radius: 6px;
+  transition: color .2s, background .2s;
+}
+.community__logout:hover {
+  color: var(--c-text);
+  background: var(--c-surface-2);
+}
+
+/* ---------- 注册弹窗 ---------- */
+#registerModal .modal__panel {
+  width: min(440px, 100%);
+}
+
+.reg-avatar {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  margin-bottom: 22px;
+}
+
+.reg-avatar label {
+  display: block;
+  cursor: pointer;
+  text-align: center;
+}
+
+.reg-avatar img {
+  width: 88px;
+  height: 88px;
+  border-radius: 50%;
+  object-fit: cover;
+  background: var(--c-surface-3);
+  border: 2px solid var(--c-border);
+  transition: transform .28s cubic-bezier(.16, 1, .3, 1),
+              border-color .2s;
+}
+.reg-avatar label:hover img {
+  transform: scale(1.05);
+  border-color: var(--c-text-3);
+}
+
+.reg-avatar label span {
+  display: block;
+  font-size: .78rem;
+  color: var(--c-text-3);
+  margin-top: 8px;
+}
+
 @media (max-width: 600px) {
   #communityModal .modal__panel { padding: 22px 20px 20px; }
   .community__msg { max-width: 92%; }
-  .community__nickname { width: 70px; font-size: .8rem; }
+  .community__msg-avatar { width: 30px; height: 30px; }
+  .community__compose { gap: 8px; }
+  .community__me { max-width: 90px; }
+  .community__me span { font-size: .76rem; }
   .community__input { font-size: .86rem; padding: 8px 12px; }
   .community__send { padding: 8px 14px; font-size: .8rem; }
 }
