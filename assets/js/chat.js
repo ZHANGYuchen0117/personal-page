@@ -39,6 +39,23 @@
     }
   }, true);
 
+  /* ---------- 文本安全 & 链接化 ---------- */
+  function escapeHtml(str) {
+    const div = document.createElement('div');
+    div.textContent = String(str || '');
+    return div.innerHTML;
+  }
+
+  // 回答里的 http(s) 链接变成可点链接（先整体转义，再替换，避免注入）
+  function linkify(text) {
+    return escapeHtml(text).replace(
+      /(https?:\/\/[^\s<]*[A-Za-z0-9\/_#+=%&~-])/g,
+      function (url) {
+        return '<a href="' + url + '" target="_blank" rel="noopener noreferrer">' + url + '</a>';
+      }
+    );
+  }
+
   function appendRow(modifier, html) {
     const row = document.createElement('div');
     row.className = 'chat__row chat__row--' + modifier;
@@ -85,7 +102,7 @@
             stream.scrollTop = stream.scrollHeight;
           },
           function (fullText) {
-            bubble.textContent = fullText;
+            bubble.innerHTML = linkify(fullText);
           },
           function (errMsg) {
             bubble.textContent = '抱歉，' + errMsg;

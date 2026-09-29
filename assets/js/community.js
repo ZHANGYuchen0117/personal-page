@@ -1,5 +1,5 @@
 /* ==========================================================
- * 社区聊天 V2.1：注册 + 发言
+ * 社区聊天 V2.2：注册 + 发言 + Storage 头像 + 实时推送 + 分页
  * ========================================================== */
 
 (function () {
@@ -38,12 +38,34 @@
       '</svg>'
     );
 
+  const PAGE_SIZE = 20;          // 每页消息数
+  const AVATAR_BUCKET = 'avatars';
+
   let currentUser = null;
-  let pendingAvatar = null;
+  let pendingAvatar = null;      // { dataUrl, blob }
   let seenIds = new Set();
-  let lastTime = null;
+  let lastTime = null;           // 最新一条时间（增量拉取用）
+  let oldestTime = null;         // 最旧一条时间（向上翻页用）
+  let hasMore = false;
+  let loadingOlder = false;
+  let loadedOnce = false;        // 首屏是否已加载过（重开弹窗只做增量）
   let pollTimer = null;
   let isOpen = false;
+
+  /* ---------- 分页按钮：列表顶部 ---------- */
+  const moreBtn = document.createElement('button');
+  moreBtn.type = 'button';
+  moreBtn.className = 'community__more';
+  moreBtn.hidden = true;
+  moreBtn.textContent = '加载更早的消息';
+  listEl.insertBefore(moreBtn, listEl.firstChild);
+  moreBtn.addEventListener('click', function () { loadOlder(); });
+
+  function updateMoreBtn() {
+    moreBtn.disabled = false;
+    moreBtn.hidden = !hasMore;
+    moreBtn.textContent = '加载更早的消息';
+  }
 
   /* ---------- 用户状态 ---------- */
   function loadUser() {
@@ -86,9 +108,10 @@
     listEl.scrollTop = listEl.scrollHeight;
   }
 
-  /* ---------- 渲染消息 ---------- */
-  function renderMessage(msg) {
-    if (!msg || !msg.id || seenIds.has(msg.id)) return;
+  /* ---------- 渲染消息 ----------
+   * prepend=true 时插到分页按钮之后（用于"加载更早"） */
+  function renderMessage(msg, prepend) {
+    if (!msg || !msg.id || seenIds.has(msg.id)) return null;
     seenIds.add(msg.id);
 
     const empty = listEl.querySelector('.community__empty');
@@ -109,42 +132,210 @@
         '<div class="community__text">' + escapeHtml(msg.content) + '</div>' +
       '</div>';
 
-    listEl.appendChild(row);
+    // 头像加载失败（比如早期内嵌图或链接失效）就回退默认头像
+    const img = row.querySelector('.community__msg-avatar');
+    img.addEventListener('error', function () {
+      img.src = DEFAULT_AVATAR;
+    }, { once: true });
+
+    if (prepend) listEl.insertBefore(row, moreBtn.nextSibling);
+    else listEl.appendChild(row);
+
+    return row;
   }
 
-  /* ---------- 拉取消息 ---------- */
-  async function fetchMessages(initial) {
-    if (!cfg.url || !cfg.anonKey) return;
+  function isNearBottom() {
+    return listEl.scrollHeight - listEl.scrollTop - listEl.clientHeight < 120;
+  }
 
-    let url = cfg.url + '/rest/v1/community_messages?select=*';
-    if (initial) {
-      url += '&order=created_at.desc&limit=100';
-    } else if (lastTime) {
-      url += '&order=created_at.asc&created_at=gt.' + encodeURIComponent(lastTime);
-    } else {
-      return;
+  /* ---------- 拉取消息：分页 + 增量 ---------- */
+  async function fetchPage(query) {
+    const res = await fetch(cfg.url + '/rest/v1/community_messages?' + query, {
+      headers: {
+        'apikey': cfg.anonKey,
+        'Authorization': 'Bearer ' + cfg.anonKey
+      }
+    });
+    if (!res.ok) throw new Error('HTTP ' + res.status);
+    return res.json();
+  }
+
+  /* 首屏：只取最新一页（多取 1 条判断还有没有更早的） */
+  async function loadInitial() {
+    if (!cfg.url || !cfg.anonKey) return;
+    const rows = await fetchPage('select=*&order=created_at.desc&limit=' + (PAGE_SIZE + 1));
+    const more = rows.length > PAGE_SIZE;
+    const page = (more ? rows.slice(0, PAGE_SIZE) : rows).reverse();
+
+    page.forEach(function (m) { renderMessage(m); });
+    if (page.length) lastTime = page[page.length - 1].created_at;
+
+    // 分页状态只在第一次首屏加载时初始化
+    if (!oldestTime) {
+      if (page.length) oldestTime = page[0].created_at;
+      hasMore = more;
+      updateMoreBtn();
     }
+    scrollToBottom();
+  }
+
+  /* 向上翻页：加载更早的消息 */
+  async function loadOlder() {
+    if (!cfg.url || !cfg.anonKey || loadingOlder || !hasMore || !oldestTime) return;
+    loadingOlder = true;
+    moreBtn.disabled = true;
+    moreBtn.textContent = '加载中…';
 
     try {
-      const res = await fetch(url, {
-        headers: {
-          'apikey': cfg.anonKey,
-          'Authorization': 'Bearer ' + cfg.anonKey
-        }
-      });
-      if (!res.ok) return;
+      const rows = await fetchPage(
+        'select=*&order=created_at.desc&created_at=lt.' + encodeURIComponent(oldestTime) +
+        '&limit=' + (PAGE_SIZE + 1)
+      );
+      const more = rows.length > PAGE_SIZE;
+      const page = (more ? rows.slice(0, PAGE_SIZE) : rows).reverse();
 
-      let rows = await res.json();
-      if (initial) rows = rows.reverse();
+      const prevHeight = listEl.scrollHeight;
+      const prevTop = listEl.scrollTop;
 
-      rows.forEach(renderMessage);
+      // 倒着插：每条都插在分页按钮后面，最终顺序才是从旧到新
+      page.slice().reverse().forEach(function (m) { renderMessage(m, true); });
+      if (page.length) oldestTime = page[0].created_at;
 
-      if (rows.length) {
-        lastTime = rows[rows.length - 1].created_at;
-        scrollToBottom();
-      }
+      hasMore = more;
+      // 新内容加在顶部：补偿滚动位置，视觉上不跳动
+      listEl.scrollTop = prevTop + (listEl.scrollHeight - prevHeight);
     } catch (e) {
       console.error('[community]', e);
+    } finally {
+      loadingOlder = false;
+      updateMoreBtn();
+    }
+  }
+
+  /* 增量：只捞比本地最新一条更新的（轮询兜底用） */
+  async function fetchNew() {
+    if (!cfg.url || !cfg.anonKey) return;
+    if (!lastTime) return loadInitial();   // 此前一条都没有：直接刷新首屏
+    const rows = await fetchPage(
+      'select=*&order=created_at.asc&created_at=gt.' + encodeURIComponent(lastTime) + '&limit=50'
+    );
+    if (!rows.length) return;
+
+    const stick = isNearBottom();
+    rows.forEach(function (m) { renderMessage(m); });
+    lastTime = rows[rows.length - 1].created_at;
+    if (stick) scrollToBottom();
+  }
+
+  /* ---------- 实时推送（Supabase Realtime，WebSocket 直连） ---------- */
+  let ws = null;
+  let wsRef = 0;
+  let wsJoined = false;
+  let wsTries = 0;
+  let wsRetryTimer = null;
+  let heartbeatTimer = null;
+
+  function realtimeUrl() {
+    return cfg.url.replace(/^http/, 'ws') +
+      '/realtime/v1/websocket?apikey=' + encodeURIComponent(cfg.anonKey) + '&vsn=1.0.0';
+  }
+
+  function onIncoming(rec) {
+    if (!rec || !rec.id) return;
+    const stick = isNearBottom();
+    const row = renderMessage(rec);
+    if (!row) return;
+    if (rec.created_at && (!lastTime || rec.created_at > lastTime)) {
+      lastTime = rec.created_at;
+    }
+    if (stick) scrollToBottom();
+  }
+
+  function startRealtime() {
+    if (!cfg.url || !cfg.anonKey || ws) return;
+
+    let socket;
+    try {
+      socket = new WebSocket(realtimeUrl());
+    } catch (e) {
+      scheduleRealtime();
+      return;
+    }
+    ws = socket;
+
+    socket.onopen = function () {
+      wsTries = 0;
+      wsRef += 1;
+      socket.send(JSON.stringify({
+        topic: 'realtime:public:community_messages',
+        event: 'phx_join',
+        payload: {
+          config: {
+            broadcast: { ack: false, self: false },
+            presence: { key: '' },
+            postgres_changes: [
+              { event: 'INSERT', schema: 'public', table: 'community_messages' }
+            ]
+          },
+          access_token: cfg.anonKey
+        },
+        ref: String(wsRef)
+      }));
+
+      if (heartbeatTimer) clearInterval(heartbeatTimer);
+      heartbeatTimer = setInterval(function () {
+        if (socket.readyState === WebSocket.OPEN) {
+          wsRef += 1;
+          socket.send(JSON.stringify({
+            topic: 'phoenix', event: 'heartbeat', payload: {}, ref: String(wsRef)
+          }));
+        }
+      }, 25000);
+    };
+
+    socket.onmessage = function (evt) {
+      let msg;
+      try { msg = JSON.parse(evt.data); } catch (e) { return; }
+
+      if (msg.event === 'phx_reply' && msg.payload && msg.payload.status === 'ok') {
+        wsJoined = true;
+        return;
+      }
+      if (msg.event === 'postgres_changes') {
+        const p = msg.payload || {};
+        const d = p.data || p;
+        const rec = d.record || d.new;
+        if (rec) onIncoming(rec);
+      }
+    };
+
+    socket.onclose = function () {
+      if (heartbeatTimer) { clearInterval(heartbeatTimer); heartbeatTimer = null; }
+      ws = null;
+      wsJoined = false;
+      scheduleRealtime();
+    };
+  }
+
+  function scheduleRealtime() {
+    if (!isOpen || wsRetryTimer) return;
+    wsTries += 1;
+    const delay = Math.min(1000 * Math.pow(2, Math.min(wsTries, 4)), 15000);
+    wsRetryTimer = setTimeout(function () {
+      wsRetryTimer = null;
+      startRealtime();
+    }, delay);
+  }
+
+  function stopRealtime() {
+    if (wsRetryTimer) { clearTimeout(wsRetryTimer); wsRetryTimer = null; }
+    if (heartbeatTimer) { clearInterval(heartbeatTimer); heartbeatTimer = null; }
+    wsJoined = false;
+    wsTries = 0;
+    if (ws) {
+      const socket = ws;
+      ws = null;
+      try { socket.close(); } catch (e) {}
     }
   }
 
@@ -206,10 +397,19 @@
     isOpen = true;
     updateUI();
 
-    fetchMessages(true).then(function () {
-      scrollToBottom();
-      pollTimer = setInterval(function () { fetchMessages(false); }, 3500);
-    });
+    const firstLoad = loadedOnce
+      ? fetchNew()
+      : loadInitial().then(function () { loadedOnce = true; });
+    firstLoad.catch(function (e) { console.error('[community]', e); });
+
+    startRealtime();
+
+    // 轮询兜底：实时连上就跳过，连不上时 5 秒兜一次
+    if (pollTimer) clearInterval(pollTimer);
+    pollTimer = setInterval(function () {
+      if (wsJoined) return;
+      fetchNew().catch(function () {});
+    }, 5000);
 
     if (currentUser) setTimeout(function () { inputEl.focus(); }, 160);
   }
@@ -218,6 +418,7 @@
     modal.hidden = true;
     document.body.style.overflow = '';
     isOpen = false;
+    stopRealtime();
     if (pollTimer) {
       clearInterval(pollTimer);
       pollTimer = null;
@@ -268,7 +469,13 @@
           const h = img.height * scale;
           ctx.drawImage(img, (size - w) / 2, (size - h) / 2, w, h);
 
-          resolve(canvas.toDataURL('image/jpeg', 0.82));
+          const dataUrl = canvas.toDataURL('image/jpeg', 0.82);
+          if (typeof canvas.toBlob !== 'function') {
+            return resolve({ dataUrl: dataUrl, blob: null });   // 老浏览器退回内嵌图
+          }
+          canvas.toBlob(function (blob) {
+            resolve({ dataUrl: dataUrl, blob: blob });
+          }, 'image/jpeg', 0.82);
         };
         img.onerror = function () { reject(new Error('图片无法读取')); };
         img.src = reader.result;
@@ -276,6 +483,26 @@
       reader.onerror = function () { reject(new Error('文件读取失败')); };
       reader.readAsDataURL(file);
     });
+  }
+
+  /* ---------- 头像上传：Supabase Storage ---------- */
+  async function uploadAvatar(avatar, userId) {
+    if (!avatar || !avatar.blob) return (avatar && avatar.dataUrl) || null;
+
+    const path = userId + '.jpg';
+    const res = await fetch(cfg.url + '/storage/v1/object/' + AVATAR_BUCKET + '/' + path, {
+      method: 'POST',
+      headers: {
+        'apikey': cfg.anonKey,
+        'Authorization': 'Bearer ' + cfg.anonKey,
+        'Content-Type': 'image/jpeg',
+        'cache-control': 'max-age=31536000'
+      },
+      body: avatar.blob
+    });
+    if (!res.ok) throw new Error('HTTP ' + res.status);
+
+    return cfg.url + '/storage/v1/object/public/' + AVATAR_BUCKET + '/' + path;
   }
 
   /* ---------- 生成用户 ID ----------
@@ -306,7 +533,7 @@
     if (!file) return;
     try {
       pendingAvatar = await processAvatar(file);
-      regAvatarPreview.src = pendingAvatar;
+      regAvatarPreview.src = pendingAvatar.dataUrl;
     } catch (err) {
       regStatus.textContent = err.message;
       regStatus.className = 'fb-status is-err';
@@ -342,10 +569,23 @@
     }
 
     regSubmit.disabled = true;
-    regStatus.textContent = '注册中…';
     regStatus.className = 'fb-status';
 
     const userId = uuidv4();
+
+    // 头像优先上传到 Storage；上传失败退回内嵌压缩图，保证注册永远能用
+    let avatarValue = null;
+    if (pendingAvatar) {
+      regStatus.textContent = '上传头像…';
+      try {
+        avatarValue = await uploadAvatar(pendingAvatar, userId);
+      } catch (err) {
+        console.warn('[community] 头像上传失败，回退内嵌图片', err);
+        avatarValue = pendingAvatar.dataUrl || null;
+      }
+    }
+
+    regStatus.textContent = '注册中…';
 
     try {
       const res = await fetch(cfg.url + '/rest/v1/community_users', {
@@ -361,7 +601,7 @@
           name: name,
           phone: phone,
           email: email,
-          avatar: pendingAvatar
+          avatar: avatarValue
         })
       });
 
@@ -370,7 +610,7 @@
       currentUser = {
         id: userId,
         name: name,
-        avatar: pendingAvatar || null
+        avatar: avatarValue
       };
       saveUser(currentUser);
       updateUI();

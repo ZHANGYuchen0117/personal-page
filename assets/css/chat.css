@@ -275,6 +275,18 @@
 .chat__bubble--error {
   color: var(--c-text-3);
 }
+
+/* 回答里的链接（V2.2）：继承文字色，下划线提示可点 */
+.chat__bubble a {
+  color: inherit;
+  text-decoration: underline;
+  text-decoration-thickness: 1px;
+  text-underline-offset: 3px;
+  transition: opacity .2s;
+}
+.chat__bubble a:hover {
+  opacity: .68;
+}
 .chat__thinking {
   display: inline-flex;
   gap: 4px;
