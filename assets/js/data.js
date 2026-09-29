@@ -18,22 +18,22 @@ window.PROFILE_DATA = {
     options: [
   {
     label: '关于我',
-    prompt: '请用2-3句话介绍张聿辰，他是计算机科学与技术专业的大一学生，对Web开发、AI应用和产品设计感兴趣。',
+    prompt: '请只依据以下信息，用2-3句话介绍张聿辰：计算机科学与技术专业大一学生，对 Web 开发、AI 应用和产品设计感兴趣，个人主页已迭代到 V2.1，正在推进 V2.2 到 V4 的迭代计划。不要补充未提到的内容。',
     answer: ''   // answer 不再用，留空即可
   },
   {
     label: '当前技能',
-    prompt: '张聿辰目前掌握HTML & CSS、Python基础、Vibe Coding、UI/UX设计和团队协作。请用2-3句话概括他的技能。',
+    prompt: '请只依据以下信息，用2-3句话概括张聿辰的技能：HTML & CSS、Python 基础、Vibe Coding、UI/UX 设计、团队协作。不要补充未提到的内容。',
     answer: ''
   },
   {
     label: '项目经历',
-    prompt: '张聿辰做过三个项目：个人主页V1、校园小程序需求调研与原型、Markdown自学笔记库。请用2-3句话介绍。',
+    prompt: '请只依据以下信息，用2-3句话介绍张聿辰的项目经历：个人主页（聊天式页面，已迭代到 V2.1，包含 AI 问答、反馈入口、社区注册与发言）、校园小程序需求调研与原型、Markdown 自学笔记库。不要补充未提到的内容。',
     answer: ''
   },
   {
     label: '下一步计划',
-    prompt: '张聿辰下一步计划迭代V2：替换真实头像、补充项目链接、优化排版、添加暗色模式。请用2-3句话说明。',
+    prompt: '请只依据以下信息，用3句话说明张聿辰的迭代计划（计划已排到 V4），每句话对应一个版本阶段并各点出一两个具体事项：V2.2 收尾社区体验（头像改走 Supabase Storage、消息实时推送、消息分页加载、补充真实项目链接）；V3 完善体验与内容（进入过场与滑入节奏、移动端打磨、内容数据化统一管理、可访问性）；V4 走向工程化与分享（可分享的单文件版本、内容管理后台、访问统计与反馈闭环、部署与域名优化）。不要补充未提到的内容。',
     answer: ''
   }
 ]
@@ -67,8 +67,27 @@ window.PROFILE_DATA = {
         title: "V2.2 待办",
         items: [
           { text: "头像上传改走 Supabase Storage", done: false },
-          { text: "消息实时推送（Realtime）", done: false },
-          { text: "社区消息分页加载", done: false }
+          { text: "社区消息实时推送（Realtime）", done: false },
+          { text: "社区消息分页加载", done: false },
+          { text: "补充真实项目链接（GitHub / 报告）", done: false }
+        ]
+      },
+      {
+        title: "V3 计划",
+        items: [
+          { text: "进入过场 + 横向滑入与纵向错落结合的节奏", done: false },
+          { text: "移动端打磨：键盘弹出、滚动位置记忆、手势", done: false },
+          { text: "内容数据化：关于我 / 技能 / 项目由一份数据驱动", done: false },
+          { text: "可访问性：对比度、键盘操作、减少动效偏好", done: false }
+        ]
+      },
+      {
+        title: "V4 计划",
+        items: [
+          { text: "导出可分享的单文件版本（一个 HTML 就能看）", done: false },
+          { text: "内容管理小后台：在线编辑资料与项目", done: false },
+          { text: "访问统计与反馈闭环", done: false },
+          { text: "部署与域名优化", done: false }
         ]
       }
     ]
