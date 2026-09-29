@@ -15,6 +15,8 @@
   min-height: 0;
   overflow-y: auto;
    overflow-x: hidden;    /* 新增：彻底禁用横向滚动 */
+  overscroll-behavior: contain;   /* 移动端：滚到底不带动页面/刷新 */
+  -webkit-overflow-scrolling: touch;
   display: flex;
   flex-direction: column;
   gap: 18px;
@@ -240,9 +242,9 @@
   .chat__avatar { width: 46px; height: 46px; border-radius: 12px; }
   .chat__name { font-size: 1.16rem; }
 
-  /* 手机上信息框按钮允许换行，否则会溢出 */
-  .info-box__list { flex-wrap: wrap; }
-  .info-box__btn { font-size: .8rem; padding: 7px 12px; }
+  /* 手机上信息框按钮允许换行，否则会溢出；同时加大到手指可点的高度 */
+  .info-box__list { flex-wrap: wrap; gap: 8px; }
+  .info-box__btn { font-size: .84rem; padding: 12px 14px; }
 }
 
 @media (max-width: 400px) {
@@ -257,7 +259,8 @@
   .chat__name { font-size: 1.08rem; }
   .chat__bubble--profile { padding: 11px 15px 11px 11px; gap: 12px; }
   .info-box__list { gap: 6px; }
-  .info-box__btn { font-size: .76rem; padding: 6px 11px; border-radius: 8px; }
+  /* 窄屏同样保留手指可点高度（别退回 33px） */
+  .info-box__btn { font-size: .8rem; padding: 12px 12px; border-radius: 10px; }
 }
 /* ---------- AI 占位符：撑起气泡尺寸，保证和原答主气泡一致 ---------- */
 .chat__placeholder {
@@ -356,12 +359,22 @@
 
 @media (max-width: 600px) {
   .chat__input-bar {
-  margin-top: 12px;
-  padding: 12px 0 14px;
-  gap: 8px;
+    margin-top: 12px;
+    /* 底部安全区：刘海屏/小白条下也不被挡 */
+    padding: 12px 0 calc(12px + env(safe-area-inset-bottom, 0px));
+    gap: 8px;
+  }
+  /* 手机上输入框字号必须 ≥16px，否则 iOS Safari 聚焦时会把整页放大 */
+  .chat__input { font-size: 16px; padding: 11px 18px; border-radius: 24px; }
+  .chat__send { font-size: .92rem; padding: 12px 20px; min-height: 44px; }
 }
-  .chat__input { font-size: .86rem; padding: 9px 15px; }
-  .chat__send { font-size: .8rem; padding: 9px 18px; }
+
+/* 触屏设备：关掉"粘住"的 hover 动效 */
+@media (hover: none) {
+  .chat__avatar:hover { transform: none; }
+  .info-box__btn:hover { transform: none; box-shadow: none; }
+  .chat__send:hover { transform: none; }
+  .chat__input:focus { transform: none; }
 }
 @media (prefers-reduced-motion: reduce) {
   .chat__row.is-entering { animation: none; opacity: 1; }

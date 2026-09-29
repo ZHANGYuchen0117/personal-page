@@ -41,8 +41,11 @@
   color: var(--c-invert-fg);
 }
 
+/* 注意：注册表单里的手机号(tel)/邮箱(email)也必须覆盖，否则会掉回浏览器默认样式 */
 .fb-field textarea,
-.fb-field input[type="text"] {
+.fb-field input[type="text"],
+.fb-field input[type="tel"],
+.fb-field input[type="email"] {
   width: 100%;
   font: inherit;
   font-size: .92rem;
@@ -55,14 +58,20 @@
   outline: none;
   resize: vertical;
   transition: border-color .2s, background .45s ease;
+  appearance: none;
+  -webkit-appearance: none;
 }
 
 .fb-field textarea { min-height: 110px; }
 .fb-field textarea::placeholder,
-.fb-field input[type="text"]::placeholder { color: var(--c-text-3); }
+.fb-field input[type="text"]::placeholder,
+.fb-field input[type="tel"]::placeholder,
+.fb-field input[type="email"]::placeholder { color: var(--c-text-3); }
 
 .fb-field textarea:focus,
-.fb-field input[type="text"]:focus { border-color: var(--c-text-3); }
+.fb-field input[type="text"]:focus,
+.fb-field input[type="tel"]:focus,
+.fb-field input[type="email"]:focus { border-color: var(--c-text-3); }
 
 .fb-honey {
   position: absolute;
@@ -103,3 +112,23 @@
 .fb-status.is-err { color: #b45a4a; }
 
 :root[data-theme="dark"] .fb-status.is-err { color: #e08b7c; }
+
+/* 触屏设备：hover 效果会"粘住"，直接关掉 */
+@media (hover: none) {
+  .fb-chip:hover { border-color: var(--c-border-2); }
+}
+
+@media (max-width: 600px) {
+  /* 手机上输入控件字号必须 ≥16px，否则 iOS Safari 聚焦时会把整页放大 */
+  .fb-field textarea,
+  .fb-field input[type="text"],
+  .fb-field input[type="tel"],
+  .fb-field input[type="email"] {
+    font-size: 16px;
+    padding: 13px 14px;
+    min-height: 48px;
+  }
+  .fb-field { margin-bottom: 16px; }
+  .fb-chip { padding: 10px 20px; font-size: .88rem; min-height: 40px; }
+  .fb-submit { min-height: 48px; font-size: .95rem; }
+}

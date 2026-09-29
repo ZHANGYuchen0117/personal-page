@@ -2,12 +2,18 @@
   const data = window.PROFILE_DATA || {};
 
   /* ---------- 主题切换 ---------- */
+  function syncThemeColor(theme) {
+    const meta = document.getElementById('themeColor');
+    if (meta) meta.setAttribute('content', theme === 'dark' ? '#141413' : '#f4f3f1');
+  }
+
   const themeBtn = document.querySelector('[data-toggle-theme]');
   if (themeBtn) {
     themeBtn.addEventListener('click', function () {
       const cur = document.documentElement.getAttribute('data-theme');
       const next = cur === 'dark' ? 'light' : 'dark';
       document.documentElement.setAttribute('data-theme', next);
+      syncThemeColor(next);
       try { localStorage.setItem('theme', next); } catch (e) {}
     });
   }

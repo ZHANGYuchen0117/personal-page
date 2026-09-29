@@ -5,6 +5,7 @@
 #communityModal .modal__panel {
   width: min(620px, 100%);
   max-height: 82vh;
+  max-height: 82dvh;
   display: flex;
   flex-direction: column;
   padding: 28px 28px 24px;
@@ -15,7 +16,10 @@
   flex: 1;
   min-height: 220px;
   max-height: 52vh;
+  max-height: 52dvh;
   overflow-y: auto;
+  overscroll-behavior: contain;
+  -webkit-overflow-scrolling: touch;
   display: flex;
   flex-direction: column;
   gap: 14px;
@@ -295,12 +299,73 @@
 }
 
 @media (max-width: 600px) {
-  #communityModal .modal__panel { padding: 22px 20px 20px; }
+  /* 手机上社区面板做成"整屏抽屉"：消息区占满可用高度，输入区固定在底部 */
+  #communityModal .modal__panel {
+    width: 100%;
+    height: min(92vh, 760px);
+    height: min(92dvh, 760px);
+    max-height: 92vh;
+    max-height: 92dvh;
+    padding: 22px 18px calc(14px + env(safe-area-inset-bottom, 0px));
+  }
+  .community__list {
+    min-height: 0;        /* 交给 flex 分配，键盘弹出时也能缩 */
+    max-height: none;
+    padding-right: 4px;
+  }
+
   .community__msg { max-width: 92%; }
-  .community__msg-avatar { width: 30px; height: 30px; }
-  .community__compose { gap: 8px; }
-  .community__me { max-width: 90px; }
-  .community__me span { font-size: .76rem; }
-  .community__input { font-size: .86rem; padding: 8px 12px; }
-  .community__send { padding: 8px 14px; font-size: .8rem; }
+  .community__msg-avatar { width: 32px; height: 32px; }
+  .community__text { font-size: .95rem; }
+
+  /* 发言区两行排布：第一行昵称 + 退出，第二行输入框 + 发送 */
+  .community__compose {
+    display: grid;
+    grid-template-columns: 1fr auto;
+    align-items: center;
+    column-gap: 8px;
+    row-gap: 8px;
+    padding-top: 12px;
+  }
+  .community__me {
+    grid-column: 1;
+    grid-row: 1;
+    max-width: none;
+    justify-self: start;
+    min-width: 0;
+  }
+  .community__logout {
+    grid-column: 2;
+    grid-row: 1;
+    justify-self: end;
+    padding: 9px 12px;
+    font-size: .8rem;
+  }
+  .community__input {
+    grid-column: 1;
+    grid-row: 2;
+    font-size: 16px;      /* ≥16px 防 iOS 聚焦缩放 */
+    padding: 11px 14px;
+    min-height: 44px;
+  }
+  .community__send {
+    grid-column: 2;
+    grid-row: 2;
+    padding: 12px 20px;
+    min-height: 44px;
+    font-size: .9rem;
+  }
+
+  .community__more { padding: 11px 22px; font-size: .82rem; }
+  .community__register-btn { min-height: 44px; padding: 12px 26px; }
+  .reg-avatar img { width: 80px; height: 80px; }
+}
+
+/* 触屏设备：关掉"粘住"的 hover 动效 */
+@media (hover: none) {
+  .community__msg:hover .community__msg-avatar { transform: none; }
+  .community__send:hover,
+  .community__register-btn:hover,
+  .community__more:hover:not(:disabled) { transform: none; }
+  .reg-avatar label:hover img { transform: none; }
 }

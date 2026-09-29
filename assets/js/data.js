@@ -18,7 +18,7 @@ window.PROFILE_DATA = {
     options: [
   {
     label: '关于我',
-    prompt: '请只依据以下信息，用2-3句话介绍张聿辰：计算机科学与技术专业大一学生，对 Web 开发、AI 应用和产品设计感兴趣，个人主页已迭代到 V2.2，正在推进 V3 到 V4 的迭代计划。不要补充未提到的内容。',
+    prompt: '请只依据以下信息，用2-3句话介绍张聿辰：计算机科学与技术专业大一学生，对 Web 开发、AI 应用和产品设计感兴趣，个人主页已迭代到 V2.3，正在推进 V3 到 V4 的迭代计划。不要补充未提到的内容。',
     answer: ''   // answer 不再用，留空即可
   },
   {
@@ -28,7 +28,7 @@ window.PROFILE_DATA = {
   },
   {
     label: '项目经历',
-    prompt: '请只依据以下信息，用2-3句话介绍张聿辰的项目经历，并把个人主页的 GitHub 链接原样写出来：个人主页（聊天式页面，GitHub 仓库：https://github.com/ZHANGYuchen0117/personal-page ，已迭代到 V2.2：AI 问答、反馈入口、社区注册与发言、消息实时推送、消息分页加载）、校园小程序需求调研与原型、Markdown 自学笔记库。不要补充未提到的内容。',
+    prompt: '请只依据以下信息，用2-3句话介绍张聿辰的项目经历，并把个人主页的 GitHub 链接原样写出来：个人主页（聊天式页面，GitHub 仓库：https://github.com/ZHANGYuchen0117/personal-page ，已迭代到 V2.3：AI 问答、反馈入口、社区注册与发言（头像存云端）、消息实时推送与分页加载、手机端适配）、校园小程序需求调研与原型、Markdown 自学笔记库。不要补充未提到的内容。',
     answer: ''
   },
   {
@@ -48,7 +48,7 @@ window.PROFILE_DATA = {
 
     changelog: {
     date: "2026年9月",
-    version: "V2.2",
+    version: "V2.3",
     groups: [
       {
         title: "已完成",
@@ -56,22 +56,22 @@ window.PROFILE_DATA = {
           { text: "聊天式个人主页 V1 系列", done: true },
           { text: "接入 AI 自由提问", done: true },
           { text: "反馈入口 + 云端数据库", done: true },
-          { text: "社区交流功能", done: true },
-          { text: "图标悬停微动效", done: true },
-          { text: "社区注册：昵称、手机号、邮箱、头像", done: true },
-          { text: "注册写入兼容数据库只读策略，注册即可用", done: true },
-          { text: "对话区可滚动，右侧常显滚动条（比背景略深）", done: true },
-          { text: "头像上传改走 Supabase Storage，不再把图片塞进消息字段", done: true },
-          { text: "社区消息实时推送（Realtime），轮询降级兜底", done: true },
-          { text: "社区消息分页加载，顶部「加载更早的消息」", done: true },
-          { text: "补充真实项目链接（GitHub 仓库）", done: true }
+          { text: "社区交流功能 + 图标悬停微动效", done: true },
+          { text: "V2.2 注册：昵称 / 手机号 / 邮箱 / 头像，兼容数据库只读策略", done: true },
+          { text: "V2.2 对话区可滚动，右侧常显滚动条（比背景略深）", done: true },
+          { text: "V2.2 消息分页加载，顶部「加载更早的消息」", done: true },
+          { text: "V2.2 补充真实项目链接（GitHub 仓库）", done: true },
+          { text: "V2.3 头像上传走 Supabase Storage，不再把图片塞进消息字段", done: true },
+          { text: "V2.3 社区消息实时推送（Realtime），断线重连 + 轮询兜底", done: true },
+          { text: "V2.3 手机端适配：刘海屏安全区、44px 触控尺寸、输入框 16px 防缩放", done: true },
+          { text: "V2.3 修复：注册表单里手机号 / 邮箱输入框没有样式", done: true }
         ]
       },
       {
         title: "V3 计划",
         items: [
           { text: "进入过场 + 横向滑入与纵向错落结合的节奏", done: false },
-          { text: "移动端打磨：键盘弹出、滚动位置记忆、手势", done: false },
+          { text: "移动端细节打磨：键盘弹出、手势、滚动位置记忆", done: false },
           { text: "内容数据化：关于我 / 技能 / 项目由一份数据驱动", done: false },
           { text: "可访问性：对比度、键盘操作、减少动效偏好", done: false }
         ]
