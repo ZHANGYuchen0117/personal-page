@@ -67,6 +67,106 @@
     moreBtn.textContent = '加载更早的消息';
   }
 
+  /* ---------- V3 手势：在顶部下拉刷新 ---------- */
+  const refreshHint = document.createElement('div');
+  refreshHint.className = 'community__refresh';
+  refreshHint.hidden = true;
+  refreshHint.textContent = '下拉刷新';
+  listEl.insertBefore(refreshHint, listEl.firstChild);
+
+  let pullStartY = null;
+  let pullDy = 0;
+  let refreshing = false;
+
+  listEl.addEventListener('touchstart', function (e) {
+    if (e.touches.length !== 1 || refreshing || listEl.scrollTop > 4) {
+      pullStartY = null;
+      return;
+    }
+    pullStartY = e.touches[0].clientY;
+    pullDy = 0;
+  }, { passive: true });
+
+  listEl.addEventListener('touchmove', function (e) {
+    if (pullStartY === null || refreshing) return;
+    const dy = e.touches[0].clientY - pullStartY;
+
+    if (dy <= 0 || listEl.scrollTop > 4) {
+      pullDy = 0;
+      refreshHint.hidden = true;
+      return;
+    }
+    pullDy = Math.min(dy, 90);
+    refreshHint.hidden = false;
+    refreshHint.style.setProperty('--pull', pullDy + 'px');
+    refreshHint.textContent = pullDy > 60 ? '松开刷新' : '下拉刷新';
+    if (dy > 10 && e.cancelable) e.preventDefault();   // 跟手，不带动页面回弹
+  }, { passive: false });
+
+  listEl.addEventListener('touchend', function () {
+    if (pullStartY === null) return;
+    const pulled = pullDy;
+    pullStartY = null;
+    pullDy = 0;
+
+    if (pulled > 60 && !refreshing) {
+      refreshing = true;
+      refreshHint.hidden = false;
+      refreshHint.textContent = '正在刷新…';
+      Promise.resolve(fetchNew())
+        .catch(function () {})
+        .then(function () {
+          refreshHint.textContent = '已是最新';
+          setTimeout(function () {
+            refreshHint.hidden = true;
+            refreshHint.style.removeProperty('--pull');
+            refreshing = false;
+          }, 700);
+        });
+    } else {
+      refreshHint.hidden = true;
+      refreshHint.style.removeProperty('--pull');
+    }
+  });
+
+  /* ---------- V3 滚动位置记忆：重开弹窗接着上次看的位置 ---------- */
+  const SCROLL_KEY = 'community_scroll';
+  let scrollSaveTimer = null;
+
+  /* V3：程序性滚动（加载完成 / 追加消息）不算"用户看的位置"，
+     否则会把"在底部"写进记忆，覆盖掉下次要恢复的位置 */
+  let programScrollUntil = 0;
+
+  function programScroll(fn) {
+    programScrollUntil = Date.now() + 350;
+    fn();
+  }
+
+  function saveListScroll() {
+    if (Date.now() < programScrollUntil) return;
+    try {
+      sessionStorage.setItem(SCROLL_KEY, JSON.stringify({
+        top: listEl.scrollTop,
+        atBottom: isNearBottom()
+      }));
+    } catch (e) {}
+  }
+
+  listEl.addEventListener('scroll', function () {
+    clearTimeout(scrollSaveTimer);
+    scrollSaveTimer = setTimeout(saveListScroll, 200);
+  });
+
+  function restoreListScroll() {
+    let saved = null;
+    try { saved = JSON.parse(sessionStorage.getItem(SCROLL_KEY) || 'null'); } catch (e) {}
+    /* top 为 0 也是有效位置（当时停在最上面） */
+    if (!saved || saved.atBottom) return;
+    programScroll(function () { listEl.scrollTop = saved.top; });
+    /* 位置失效（消息比当时少）就退回底部 */
+    if (Math.abs(listEl.scrollTop - saved.top) > 12) scrollToBottom();
+  }
+
   /* ---------- 用户状态 ---------- */
   function loadUser() {
     try {
@@ -105,7 +205,7 @@
   }
 
   function scrollToBottom() {
-    listEl.scrollTop = listEl.scrollHeight;
+    programScroll(function () { listEl.scrollTop = listEl.scrollHeight; });
   }
 
   /* ---------- 渲染消息 ----------
@@ -203,7 +303,7 @@
 
       hasMore = more;
       // 新内容加在顶部：补偿滚动位置，视觉上不跳动
-      listEl.scrollTop = prevTop + (listEl.scrollHeight - prevHeight);
+      programScroll(function () { listEl.scrollTop = prevTop + (listEl.scrollHeight - prevHeight); });
     } catch (e) {
       console.error('[community]', e);
     } finally {
@@ -400,7 +500,8 @@
     const firstLoad = loadedOnce
       ? fetchNew()
       : loadInitial().then(function () { loadedOnce = true; });
-    firstLoad.catch(function (e) { console.error('[community]', e); });
+    /* V3：加载完成后恢复上次的滚动位置 */
+    firstLoad.then(restoreListScroll).catch(function (e) { console.error('[community]', e); });
 
     startRealtime();
 
@@ -415,6 +516,7 @@
   }
 
   function closeModal() {
+    saveListScroll();
     modal.hidden = true;
     document.body.style.overflow = '';
     isOpen = false;
@@ -649,11 +751,7 @@
     });
   }
 
-  document.addEventListener('keydown', function (e) {
-    if (e.key !== 'Escape') return;
-    if (!regModal.hidden) { closeReg(); return; }
-    if (isOpen) closeModal();
-  });
+  /* Esc 关闭交给 app.js 的统一键盘处理（V3），此处不再重复绑定 */
 
   sendBtn.addEventListener('click', sendMessage);
   inputEl.addEventListener('keydown', function (e) {

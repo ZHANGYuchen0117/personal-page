@@ -70,6 +70,22 @@
 .community__more:active:not(:disabled) { transform: translateY(0) scale(.97); }
 .community__more:disabled { opacity: .55; cursor: default; }
 
+/* ---------- V3 下拉刷新提示：跟在手指下方，像一张小纸条 ---------- */
+.community__refresh {
+  align-self: center;
+  flex-shrink: 0;
+  font-size: .76rem;
+  color: var(--c-text-3);
+  background: var(--c-surface-2);
+  border: 1px dashed var(--c-border);
+  border-radius: 999px;
+  padding: 5px 16px;
+  text-align: center;
+  pointer-events: none;
+  transform: translateY(calc(var(--pull, 0px) * -.22));
+  transition: transform .18s ease;
+}
+
 .community__msg {
   display: flex;
   gap: 10px;

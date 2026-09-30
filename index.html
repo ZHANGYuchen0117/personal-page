@@ -42,7 +42,8 @@
     --c-bg: #f4f3f1;
     --c-text: #1a1a1a;
     --c-text-2: #333333;
-    --c-text-3: #a6a6a3;
+    /* V3 对比度：原 #a6a6a3 在浅背景上只有 2.2:1，改为 4.6:1+ */
+    --c-text-3: #6e6e6b;
     --c-surface: #ffffff;
     --c-surface-2: #f4f4f2;
     --c-surface-3: #e8e8e6;
@@ -63,7 +64,8 @@
     --c-bg: #141413;
     --c-text: #f0f0ee;
     --c-text-2: #c8c8c6;
-    --c-text-3: #7a7a78;
+    /* V3 对比度：原 #7a7a78 在 #232322 上只有 3.7:1，改为 4.9:1+ */
+    --c-text-3: #90908e;
     --c-surface: #1e1e1d;
     --c-surface-2: #232322;
     --c-surface-3: #2c2c2b;
@@ -347,6 +349,23 @@
     .btn-theme:hover,
     .modal__close:hover { transform: none; }
   }
+
+  /* ---------- V3 键盘避让：手机键盘弹出时给页面与弹窗留出空间 ---------- */
+  .page { padding-bottom: var(--kb-offset, 0px); }
+  .modal { padding-bottom: calc(12px + var(--kb-offset, 0px)); }
+  @media (min-width: 601px) {
+    .modal { padding-bottom: calc(20px + var(--kb-offset, 0px)); }
+  }
+
+  /* ---------- V3 键盘焦点：键盘操作时任何可点元素都看得清 ---------- */
+  a:focus-visible,
+  button:focus-visible,
+  input:focus-visible,
+  textarea:focus-visible,
+  [tabindex]:focus-visible {
+    outline: 2px solid var(--c-text);
+    outline-offset: 2px;
+  }
 </style>
 </head>
 
@@ -521,6 +540,7 @@
 <script src="./assets/js/ai.js"></script>
 <script src="./assets/js/chat.js"></script>
 <script src="./assets/js/app.js"></script>
+<script src="./assets/js/gestures.js"></script>
 
 </body>
 </html>

@@ -46,31 +46,51 @@
   background-clip: padding-box;
 }
 
-/* ---------- 入场：从左侧滑出，慢而带质感 ---------- */
+/* ---------- V3 入场：横向滑入 + 纵向错落，慢而带质感 ----------
+   横向：回答/头像/信息框从左侧滑入（--enter-x 为负），提问从右侧（为正）
+   纵向：每行起始位置由 JS 写入 --enter-y，逐行错落，形成节奏 */
 .chat__row {
   display: flex;
   opacity: 0;
+  --enter-x: -34px;
+  --enter-y: 18px;
   will-change: transform, opacity, filter;
 }
+.chat__row--ask {
+  --enter-x: 34px;
+}
 .chat__row.is-entering {
-  animation: bubbleIn 1s cubic-bezier(.16, 1, .3, 1) forwards;
+  animation: bubbleIn .9s cubic-bezier(.16, 1, .3, 1) forwards;
+}
+/* 减少动效偏好：不做位移与动画，直接呈现（JS 也会跳过 is-entering） */
+.chat__row.is-static {
+  animation: none;
+  opacity: 1;
 }
 @keyframes bubbleIn {
   0% {
     opacity: 0;
-    transform: translate3d(0, 28px, 0) scale(.96);
+    transform: translate3d(var(--enter-x), var(--enter-y), 0) scale(.97);
     filter: blur(6px);
   }
-  60% {
+  55% {
     opacity: 1;
     filter: blur(0);
-    transform: translate3d(0, -3px, 0) scale(1.004);
+    transform: translate3d(calc(var(--enter-x) * -.08), -3px, 0) scale(1.004);
   }
   100% {
     opacity: 1;
     transform: translate3d(0, 0, 0) scale(1);
     filter: blur(0);
   }
+}
+
+/* ---------- V3 进入过场：整个舞台从虚到实 ---------- */
+.chat__stream.is-intro {
+  filter: blur(4px);
+  opacity: .25;
+  transform: translateY(8px);
+  transition: filter .75s cubic-bezier(.3, .7, .2, 1), opacity .75s cubic-bezier(.3, .7, .2, 1), transform .75s cubic-bezier(.3, .7, .2, 1);
 }
 
 /* ---------- 左右对称：回答靠左留右空，提问靠右留左空 ---------- */
@@ -155,6 +175,23 @@
   letter-spacing: -.02em;
   line-height: 1.2;
   transition: color .45s ease;
+}
+
+/* ---------- V3 第一眼：头像与姓名的专属入场 ---------- */
+.chat__row--profile.is-entering .chat__avatar {
+  animation: avatarIn .95s cubic-bezier(.16, 1, .3, 1) both;
+}
+.chat__row--profile.is-entering .chat__name {
+  animation: nameIn .8s cubic-bezier(.16, 1, .3, 1) .1s both;
+}
+@keyframes avatarIn {
+  0% { opacity: 0; transform: scale(.82) rotate(-4deg); }
+  60% { opacity: 1; transform: scale(1.04) rotate(1deg); }
+  100% { opacity: 1; transform: scale(1) rotate(0deg); }
+}
+@keyframes nameIn {
+  0% { opacity: 0; transform: translateX(-12px); }
+  100% { opacity: 1; transform: translateX(0); }
 }
 
 /* ---------- 信息框：宽度自适应内容，不换行 ---------- */
@@ -378,8 +415,20 @@
 }
 @media (prefers-reduced-motion: reduce) {
   .chat__row.is-entering { animation: none; opacity: 1; }
+  .chat__row { --enter-x: 0px; --enter-y: 0px; }
+  .chat__row--profile.is-entering .chat__avatar,
+  .chat__row--profile.is-entering .chat__name { animation: none; }
+  .chat__stream.is-intro { filter: none; opacity: 1; transform: none; transition: none; }
   .info-box__btn { transition: none; }
   .chat__bubble, .chat__avatar, .chat__name, .info-box__title { transition: none; }
+}
+
+/* ---------- V3 键盘焦点：键盘用户也能看清选中了哪里 ---------- */
+.chat__input:focus-visible,
+.info-box__btn:focus-visible,
+.chat__send:focus-visible {
+  outline: 2px solid var(--c-text);
+  outline-offset: 2px;
 }
 /* ---------- V2.0 图标微动效 ---------- */
 

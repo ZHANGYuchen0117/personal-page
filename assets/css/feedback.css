@@ -109,7 +109,8 @@
   min-height: 1.2em;
 }
 .fb-status.is-ok { color: var(--c-text); }
-.fb-status.is-err { color: #b45a4a; }
+/* V3 对比度：#b45a4a 只有 4.7:1，收紧到 6.4:1 */
+.fb-status.is-err { color: #9a4536; }
 
 :root[data-theme="dark"] .fb-status.is-err { color: #e08b7c; }
 
