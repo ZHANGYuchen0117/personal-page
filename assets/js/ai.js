@@ -18,9 +18,22 @@ function friendlyAIError(err) {
   return msg || 'AI 暂时无法响应';
 }
 
-async function callLLM(userMessage, onChunk, onDone, onError) {
+function sleep(ms) {
+  return new Promise(function (resolve) { setTimeout(resolve, ms); });
+}
+
+/* 判断是不是「网络层」的偶发失败（Safari 报 Load failed，Chrome 报 Failed to fetch）。
+   这类失败重试一次往往就好了；超时（AbortError）不算，重试只会让人多等一倍时间。 */
+function isTransientNetworkError(err) {
+  if (!err || err.name === 'AbortError') return false;
+  const msg = String(err.message || '');
+  return (err instanceof TypeError) || /load failed|failed to fetch|network|connection/i.test(msg);
+}
+
+async function callLLM(userMessage, onChunk, onDone, onError, _isRetry) {
   const controller = (typeof AbortController !== 'undefined') ? new AbortController() : null;
   const timer = controller ? setTimeout(function () { controller.abort(); }, AI_CONFIG.timeout) : null;
+  let gotAny = false;   /* 是否已经收到过内容，决定能不能安全重试 */
   try {
     const response = await fetch(AI_CONFIG.endpoint, {
       method: 'POST',
@@ -59,6 +72,7 @@ async function callLLM(userMessage, onChunk, onDone, onError) {
           const json = JSON.parse(data);
           const delta = json.choices?.[0]?.delta?.content;
           if (delta) {
+            gotAny = true;
             fullText += delta;
             onChunk(delta);
           }
@@ -68,6 +82,14 @@ async function callLLM(userMessage, onChunk, onDone, onError) {
 
     if (onDone) onDone(fullText);
   } catch (err) {
+    /* 偶发失败自动重试一次。
+       只在「一个字都还没收到」时才重试：如果已经吐了一半，重试会把答案叠成两份。 */
+    if (!gotAny && !_isRetry && isTransientNetworkError(err)) {
+      console.warn('[ai.js] 首次调用失败，稍后自动重试一次:', err && err.name, err && err.message);
+      if (timer) clearTimeout(timer);
+      await sleep(900);
+      return callLLM(userMessage, onChunk, onDone, onError, true);
+    }
     /* 控制台保留原始报错（方便排查），给访客的则是一句人话 */
     console.error('[ai.js] 原始错误:', err && err.name, err && err.message);
     if (onError) onError(friendlyAIError(err));
