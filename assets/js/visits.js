@@ -59,6 +59,15 @@
         keepalive: true
       }).then(function (res) {
         window.__visitPingState = res && res.ok ? 'sent' : 'failed';
+        // 页面上继续静默（访客不该被后台配置问题打扰），但控制台要说清楚原因，
+        // 否则「表没建」这种问题会一直悄无声息。
+        if (res && !res.ok) {
+          if (res.status === 404) {
+            console.warn('[visits] visits 表不存在，访问统计没有生效。请先在 Supabase 执行 supabase/v4-security.sql');
+          } else {
+            console.warn('[visits] 访问统计上报失败，HTTP ' + res.status);
+          }
+        }
         return !!(res && res.ok);
       }).catch(function () {
         window.__visitPingState = 'failed';

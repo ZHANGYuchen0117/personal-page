@@ -78,9 +78,23 @@ python3 tools/build-standalone.py            # 输出 dist/personal-page.html
 表 / 桶：`feedback`、`community_users`、`community_messages`、`avatars`（Storage 桶）、`visits`。
 匿名策略原则：**只给写入，不给读取**；头像走 Storage 公开读。
 
+- **安全基线（推荐先跑这一个，幂等，包含下面两个）**：`supabase/v4-security.sql`
 - 建桶与实时推送：`supabase/v2.2-storage-realtime.sql`
 - 访问统计建表：`supabase/v4-visits.sql`
 - 页面在表还没建好时会静默跳过，不影响打开
+
+### 关于 anon key 被提交到仓库
+
+`assets/js/supabase-config.js` 里的 `anonKey` 是 Supabase 的**公开密钥**（JWT 里 `role: anon`），
+设计上就要放在前端，也必然会随部署的 HTML 一起发出去——**提交到仓库不等于泄露**。
+它自己没有任何权限，能做什么完全由 RLS 策略决定。所以：
+
+- 真正的安全边界在 `supabase/v4-security.sql`，要改数据权限请改那里，别在控制台手点
+- **绝不能**把 anonKey 换成 `service_role` key：那个会绕过所有 RLS
+- 该文件里的策略遵循「默认拒绝」：留言只能新增不能改删、用户表只进不出（保护手机号 / 邮箱）、
+  访问统计只写不读、头像只能写自己 uuid 命名的文件且不能覆盖删除
+- 如果哪天怀疑密钥被人乱用，在 Supabase 控制台轮换 anon key 即可（改完要同步
+  `supabase-config.js` 并重新打包、推送）
 
 ## 部署
 

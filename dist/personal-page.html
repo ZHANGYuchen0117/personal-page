@@ -1850,6 +1850,17 @@
 
 </script>
 <script>/* ./assets/js/supabase-config.js */
+/* ============================================================
+ * Supabase 连接配置
+ *
+ * 注意 anonKey 是 Supabase 的「公开密钥」（JWT 里 role 写着 anon），
+ * 它被提交到仓库、被打进 dist、被浏览器下载，都是设计如此，不算泄露 ——
+ * Supabase 官方就要求把 anon key 放在前端。真正决定安全的是数据库的
+ * RLS 策略，见 supabase/v4-security.sql，改动数据权限请改那个文件。
+ *
+ * 绝对不要把这个文件里的 anonKey 换成 service_role key：
+ * service_role 会绕过所有 RLS，等于把数据库交出去。
+ * ============================================================ */
 window.SUPABASE_CONFIG = {
   url: 'https://qnctdjwoylhfbqigqkje.supabase.co',
   anonKey: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InFuY3RkandveWxoZmJxaWdxa2plIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODk2MzAxODYsImV4cCI6MjEwNTIwNjE4Nn0.j6KMMpwOHU_hwAtL3WNYO7EbVsSwJ5ZhvWa1MhyG1l8'
@@ -3569,6 +3580,15 @@ async function callLLM(userMessage, onChunk, onDone, onError) {
         keepalive: true
       }).then(function (res) {
         window.__visitPingState = res && res.ok ? 'sent' : 'failed';
+        // 页面上继续静默（访客不该被后台配置问题打扰），但控制台要说清楚原因，
+        // 否则「表没建」这种问题会一直悄无声息。
+        if (res && !res.ok) {
+          if (res.status === 404) {
+            console.warn('[visits] visits 表不存在，访问统计没有生效。请先在 Supabase 执行 supabase/v4-security.sql');
+          } else {
+            console.warn('[visits] 访问统计上报失败，HTTP ' + res.status);
+          }
+        }
         return !!(res && res.ok);
       }).catch(function () {
         window.__visitPingState = 'failed';
