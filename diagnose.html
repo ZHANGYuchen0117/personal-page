@@ -64,6 +64,8 @@
   <textarea id="dump" hidden readonly placeholder="检测结果会出现在这里，可直接全选复制"></textarea>
 </div>
 
+<!-- 同源复用主站资料：这样诊断发的请求和网页真实发的完全一致 -->
+<script src="./assets/js/data.js"></script>
 <script>
 var FN   = 'https://qnctdjwoylhfbqigqkje.supabase.co/functions/v1/llm-proxy';
 var REST = 'https://qnctdjwoylhfbqigqkje.supabase.co/rest/v1/community_messages?select=id&limit=1';
@@ -165,11 +167,17 @@ async function runAll() {
   /* 4. AI 接口：完全照抄页面里的做法（含流式读取），这是用户实际走的路径 */
   var t4 = addCase('T4', 'AI 接口：完整路径（和网页里一模一样的调用）');
   var s4 = performance.now();
+  /* 尽量用主站真实的提问方式（带页面资料），测不到再退回一句简单问候 */
+  var realQuestion = '这个人的专业是什么？';
+  var prompt = '你好';
+  if (window.PROFILE_DATA && typeof window.PROFILE_DATA.questionPrompt === 'function') {
+    prompt = window.PROFILE_DATA.questionPrompt(realQuestion);
+  }
   try {
     var res = await tfetch(FN, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + KEY },
-      body: JSON.stringify({ message: '你好' })
+      body: JSON.stringify({ message: prompt })
     }, 20000);
     if (!res.ok) {
       var et = await res.text();
@@ -184,9 +192,22 @@ async function runAll() {
         if (step.done) break;
         chunks++;
         acc += dec.decode(step.value, { stream: true });
-        if (acc.length > 300 || performance.now() - t0 > 12000) break;
+        /* 读到流结束标记为止（SSE 的每个块都带不少 JSON 外壳，
+           窗口太小会只读到角色块，看不到真正的答案文字） */
+        if (acc.indexOf('[DONE]') !== -1 || acc.length > 4000 || performance.now() - t0 > 15000) break;
       }
-      finish(t4, true, 'HTTP ' + res.status + '，收到 ' + chunks + ' 个数据块，首包耗时 ' + ms(s4) + 'ms\n内容开头: ' + acc.replace(/\n/g, ' ').slice(0, 120));
+      /* 把 SSE 里的回答文字解出来，好核对口径 */
+      var texts = [], re2 = /"content":"((?:[^"\\]|\\.)*)"/g, mm2;
+      while ((mm2 = re2.exec(acc)) !== null) texts.push(mm2[1]);
+      var answer = texts.join('').replace(/\\n/g, ' ').replace(/\\"/g, '"');
+      var saidNew = answer.indexOf('智能医学工程') !== -1;
+      var saidOld = answer.indexOf('计算机科学') !== -1;
+      finish(t4, true,
+        'HTTP ' + res.status + '，收到 ' + chunks + ' 个数据块，首包耗时 ' + ms(s4) + 'ms\n' +
+        '提问方式：' + (prompt === '你好' ? '简短问候（没取到页面资料）' : '与网页一致，带页面资料，' + prompt.length + ' 字') + '\n' +
+        'AI 回答: ' + (answer ? answer.slice(0, 140) : '（这次没读到回答文字）') + '\n' +
+        '口径核对：出现「智能医学工程」' + (saidNew ? '是 ✓' : '否') +
+        '，出现旧专业名「计算机科学」' + (saidOld ? '是（不正常，请反馈）' : '否'));
     }
   } catch (e) {
     finish(t4, false, '失败，耗时 ' + ms(s4) + 'ms\n' + describe(e) + '\n说明：这就是网页上看到的报错来源。');

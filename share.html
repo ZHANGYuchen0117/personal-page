@@ -1773,6 +1773,35 @@
     return '请只依据以下信息，用1-2句话说明' + NAME + '接下来的迭代计划：' + planText + '。' + RULE;
   }
 
+  /* 自由输入的问题：把页面上的资料一并带上。
+     不这么做的话，后端 AI 只能凭它自己那份已经过期的知识回答
+     （实测会把专业答成「计算机科学」、把项目答成泛泛的「软件开发」）。
+     菜单按钮的 prompt 本来就已经带了完整资料，所以只给自由输入补这一层。 */
+  function questionPrompt(question) {
+    const facts = CONTENT.about.facts.concat([CONTENT.about.stage]);
+    const skills = CONTENT.skills.map(function (s) {
+      return s.note ? s.name + '（' + s.note + '）' : s.name;
+    }).join('、');
+    const projects = CONTENT.projects.map(function (p) {
+      const bits = [];
+      if (p.desc) bits.push(p.desc);
+      if (p.link) bits.push('GitHub 仓库：' + p.link);
+      return bits.length ? p.name + '（' + bits.join('，') + '）' : p.name;
+    }).join('、');
+    const plan = CONTENT.plan.map(function (stage) {
+      return stage.version + ' ' + stage.theme + '（' + stage.items.join('、') + '）';
+    }).join('；');
+
+    return '请只依据以下信息回答访客的问题，用2-3句话，语气自然。' + RULE + '\n' +
+      '姓名：' + NAME + '\n' +
+      '关于：' + facts.join('，') + '\n' +
+      '技能：' + skills + '\n' +
+      '项目：' + projects + '\n' +
+      '接下来：' + plan + '\n' +
+      '联系方式：页面上的「联系我」里有微信二维码，扫码即可加好友。\n' +
+      '访客的问题：' + question;
+  }
+
   window.PROFILE_DATA = {
     name: NAME,
 
@@ -1782,6 +1811,9 @@
 
     /* 内容数据（V3）：关于我 / 技能 / 项目 / 计划 */
     content: CONTENT,
+
+    /* 给自由输入的问题补上页面资料（菜单按钮自己有完整 prompt，不走这里） */
+    questionPrompt: questionPrompt,
 
     /* 开场依次弹出的消息 */
     introMessages: [
@@ -1840,7 +1872,7 @@
             { text: 'V4 内容管理小后台：在线编辑资料与项目并导出 data.js', done: true },
             { text: 'V4 访问统计（匿名计入访客）+ 反馈回执闭环', done: true },
             { text: 'V4 部署与分享优化：分享卡片、图标、站点地图、404 指引', done: true },
-            { text: 'AI 问答更稳：偶发断线自动重试一次，真连不上就用本地资料兜底回答', done: true }
+            { text: 'AI 问答更稳更准：偶发断线自动重试，回答一律以页面资料为准，真连不上就用本地资料兜底', done: true }
           ]
         },
         {
@@ -3153,6 +3185,12 @@ async function callLLM(userMessage, onChunk, onDone, onError, _isRetry) {
 
     appendRow('ask', questionText);
 
+    /* 菜单按钮的 prompt 已经自带完整资料；自由输入只有原文，
+       要在这里补上页面资料，否则 AI 会用它自己那份过期知识作答。 */
+    const outgoing = questionText.indexOf('请只依据以下信息') === 0
+      ? questionText
+      : (typeof data.questionPrompt === 'function' ? data.questionPrompt(questionText) : questionText);
+
     setTimeout(function () {
       if (typeof callLLM === 'function') {
         const answerRow = appendRow(
@@ -3165,7 +3203,7 @@ async function callLLM(userMessage, onChunk, onDone, onError, _isRetry) {
         let started = false;
 
         callLLM(
-          questionText,
+          outgoing,
           function (chunk) {
             if (!started) {
               bubble.innerHTML = '';

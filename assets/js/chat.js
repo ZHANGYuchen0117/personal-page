@@ -217,6 +217,12 @@
 
     appendRow('ask', questionText);
 
+    /* 菜单按钮的 prompt 已经自带完整资料；自由输入只有原文，
+       要在这里补上页面资料，否则 AI 会用它自己那份过期知识作答。 */
+    const outgoing = questionText.indexOf('请只依据以下信息') === 0
+      ? questionText
+      : (typeof data.questionPrompt === 'function' ? data.questionPrompt(questionText) : questionText);
+
     setTimeout(function () {
       if (typeof callLLM === 'function') {
         const answerRow = appendRow(
@@ -229,7 +235,7 @@
         let started = false;
 
         callLLM(
-          questionText,
+          outgoing,
           function (chunk) {
             if (!started) {
               bubble.innerHTML = '';
