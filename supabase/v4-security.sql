@@ -19,6 +19,9 @@
 -- 【核心思想】Postgres 的 RLS 是「默认拒绝」：
 --   没写策略 = 该操作一律拒绝。所以下面有些操作是「故意不写策略」的，
 --   不要为了「顺手」去补 update / delete 策略。
+--
+-- 【关于 not valid】下面加的长度约束都带 not valid：它不去校验已有的历史数据
+--   （避免因为老数据不合格导致整段执行失败），但对以后的新写入一律生效。
 -- ============================================================
 
 
@@ -187,7 +190,7 @@ create policy "avatars anon insert"
   to anon, authenticated
   with check (
     bucket_id = 'avatars'
-    and name ~ '^[0-9a-fA-F-]{36}\.jpg$'
+    and name ~ '^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}\.jpg$'
   );
 
 -- 故意不写 update / delete 策略：任何人都覆盖或删除不了别人的头像
