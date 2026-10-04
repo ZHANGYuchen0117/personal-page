@@ -101,6 +101,38 @@
     );
   }
 
+  /* ---------- V4 复制文本：优先剪贴板 API，老手机浏览器退回 execCommand ---------- */
+  function fallbackCopy(text) {
+    try {
+      const ta = document.createElement('textarea');
+      ta.value = text;
+      ta.setAttribute('readonly', '');
+      ta.style.position = 'fixed';
+      ta.style.top = '-1000px';
+      ta.style.opacity = '0';
+      document.body.appendChild(ta);
+      ta.select();
+      ta.setSelectionRange(0, ta.value.length);
+      const done = document.execCommand('copy');
+      document.body.removeChild(ta);
+      return done;
+    } catch (e) {
+      return false;
+    }
+  }
+
+  function copyText(text) {
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      /* 注意：writeText 成功时 resolve 的是 undefined，不是 true，
+         必须显式归一成布尔值，否则成功也会被判成失败 */
+      return navigator.clipboard.writeText(text).then(
+        function () { return true; },
+        function () { return fallbackCopy(text); }
+      );
+    }
+    return Promise.resolve(fallbackCopy(text));
+  }
+
   /* ---------- V3 纵向错落：每行起始高度四档循环，横向下滑方向由角色决定 ---------- */
   const ENTER_Y = [10, 16, 22, 28];
   let rowSeq = 0;
@@ -227,21 +259,78 @@
     timeline += STEP;
   }
 
-  /* ---------- 5：联系我信息框 ---------- */
-  if (contact) {
+  /* ---------- 5：联系我信息框（V4：改成微信 / 二维码，不再默认发邮件） ---------- */
+  const hasContact = !!(contact && (contact.qr || contact.wechat || contact.email));
+  if (hasContact) {
     const t = timeline;
     setTimeout(function () {
-      appendRow(
-        'box',
-        '<div class="info-box">' +
-          '<div class="info-box__title">' + (contact.title || '') + '</div>' +
-          '<div class="info-box__list">' +
-            '<a class="info-box__btn info-box__btn--link" href="mailto:' + (contact.email || '') + '">' +
-              (contact.label || '联系我') +
-            '</a>' +
-          '</div>' +
-        '</div>'
-      );
+      const hasQr = !!contact.qr;
+      const hasWechat = !!contact.wechat;
+
+      let inner =
+        '<div class="info-box__title">' + escapeHtml(contact.title || '联系我') + '</div>';
+
+      if (hasQr) {
+        inner +=
+          '<div class="info-box__qr">' +
+            '<img class="info-box__qr-img" src="' + escapeHtml(contact.qr) + '" ' +
+                 'alt="我的微信二维码" loading="lazy" decoding="async">' +
+            (contact.qrTip
+              ? '<span class="info-box__qr-tip">' + escapeHtml(contact.qrTip) + '</span>'
+              : '') +
+          '</div>';
+      }
+
+      /* 只在真有按钮时才渲染这一行，避免留一条空的选择条 */
+      let actions = '';
+      if (hasWechat) {
+        actions +=
+          '<button type="button" class="info-box__btn info-box__btn--copy" data-copy-wechat>' +
+            escapeHtml(contact.label || '复制微信号') +
+          '</button>';
+      }
+      /* 邮箱不再是默认方式，但留了口子：填了才显示 */
+      if (contact.email) {
+        actions +=
+          '<a class="info-box__btn info-box__btn--link" href="mailto:' + escapeHtml(contact.email) + '">' +
+            escapeHtml(contact.emailLabel || '发送邮件') +
+          '</a>';
+      }
+      if (actions) inner += '<div class="info-box__list">' + actions + '</div>';
+
+      if (hasWechat) {
+        inner += '<p class="info-box__wechat">微信号：<b>' + escapeHtml(contact.wechat) + '</b></p>';
+      } else if (contact.tip) {
+        inner += '<p class="info-box__wechat">' + escapeHtml(contact.tip) + '</p>';
+      }
+
+      const row = appendRow('box', '<div class="info-box">' + inner + '</div>');
+
+      /* 二维码图片没就位就不留破图；如果又没有微信号/邮箱可联系，整条收起 */
+      const qrImg = row.querySelector('.info-box__qr-img');
+      if (qrImg) {
+        qrImg.addEventListener('error', function () {
+          const wrap = qrImg.closest('.info-box__qr');
+          if (wrap) wrap.hidden = true;
+          if (!hasWechat && !contact.email) row.hidden = true;
+        });
+      }
+
+      /* 复制微信号，点了给个反馈 */
+      const copyBtn = row.querySelector('[data-copy-wechat]');
+      if (copyBtn && hasWechat) {
+        const original = copyBtn.textContent;
+        copyBtn.addEventListener('click', function () {
+          copyText(contact.wechat).then(function (ok) {
+            copyBtn.textContent = ok ? '已复制 ✓' : '复制失败，请长按微信号';
+            copyBtn.classList.toggle('is-copied', !!ok);
+            setTimeout(function () {
+              copyBtn.textContent = original;
+              copyBtn.classList.remove('is-copied');
+            }, 1600);
+          });
+        });
+      }
     }, t);
     timeline += STEP;
   }

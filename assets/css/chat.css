@@ -246,6 +246,60 @@
 }
 .info-box__btn:active { transform: translateY(0); }
 
+/* ---------- V4 联系我：微信二维码 + 复制微信号 ---------- */
+.info-box__qr {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  margin: 0 0 14px;
+}
+
+.info-box__qr-img {
+  /* 保持原始宽高比：微信名片是竖版，硬塞进正方形会把二维码压小、还有可能变形扫不出来 */
+  height: 200px;
+  width: auto;
+  max-width: 100%;
+  object-fit: contain;
+  box-sizing: border-box;
+  padding: 6px;
+  border-radius: 12px;
+  /* 二维码必须是白底黑码才扫得出来，深色模式下也保持白底 */
+  background: #ffffff;
+  border: 1px solid var(--c-border-2);
+}
+
+.info-box__qr-tip {
+  font-size: .72rem;
+  letter-spacing: .02em;
+  color: var(--c-text-3);
+}
+
+.info-box__btn--copy.is-copied {
+  background: var(--c-invert-bg);
+  border-color: var(--c-invert-bg);
+  color: var(--c-invert-fg);
+}
+
+.info-box__wechat {
+  margin: 12px 0 0;
+  font-size: .82rem;
+  color: var(--c-text-2);
+}
+
+.info-box__wechat b {
+  font-weight: 600;
+  color: var(--c-text);
+  /* 手点也能一次选中整串，方便手动复制 */
+  user-select: all;
+  -webkit-user-select: all;
+}
+
+@media (max-width: 720px) {
+  .info-box__qr-img { height: 176px; }
+  .info-box__btn--copy { min-height: 44px; }   /* 触控目标不小于 44px */
+}
+
 /* ---------- 移动端精修 ---------- */
 @media (max-width: 720px) {
   .chat__stream { gap: 16px; }

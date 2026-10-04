@@ -13,7 +13,7 @@
         '计算机科学与技术专业大一学生',
         '对 Web 开发、AI 应用和产品设计感兴趣'
       ],
-      stage: '个人主页已迭代到 V3，正在推进 V4 计划'
+      stage: '个人主页已迭代到 V4，正在推进 V5 计划'
     },
 
     /* 技能：一项一行，note 补充程度或场景（可省） */
@@ -39,9 +39,9 @@
     /* 迭代计划：版本 / 主题 / 具体事项 */
     plan: [
       {
-        version: 'V4',
-        theme: '走向工程化与分享',
-        items: ['可分享的单文件版本', '内容管理后台', '访问统计与反馈闭环', '部署与域名优化']
+        version: 'V5',
+        theme: '更好用、更好看',
+        items: ['装进桌面：离线可用的 PWA', '多套配色方案', '内容多语言切换', '社区消息搜索与筛选']
       }
     ]
   };
@@ -107,16 +107,21 @@
       ]
     },
 
-    /* 第五条：联系我信息框 */
+    /* 第五条：联系我信息框（V4：改成微信 / 二维码，不再默认发邮件）
+       - 二维码：把图片放到 assets/img/wechat-qr.png，文件不在时这块自动隐藏
+       - 微信号：填了才显示「复制微信号」按钮
+       - 两者都没填时，整个「联系我」信息框不出现（不会露出空盒子） */
     contactMessage: {
       title: '联系我',
-      email: 'you@example.com',
-      label: '发送邮件'
+      qr: './assets/img/wechat-qr.png',
+      qrTip: '微信扫一扫，加我好友',
+      wechat: '',
+      label: '复制微信号'
     },
 
     changelog: {
       date: '2026年9月',
-      version: 'V3',
+      version: 'V4',
       groups: [
         {
           title: '已完成',
@@ -136,16 +141,20 @@
             { text: 'V3 进入过场：横向滑入与纵向错落结合的节奏', done: true },
             { text: 'V3 移动端细节：键盘避让、下拉刷新手势、滚动位置记忆', done: true },
             { text: 'V3 内容数据化：关于我 / 技能 / 项目由一份数据驱动', done: true },
-            { text: 'V3 可访问性：文字对比度、键盘操作与焦点样式、减少动效偏好', done: true }
+            { text: 'V3 可访问性：文字对比度、键盘操作与焦点样式、减少动效偏好', done: true },
+            { text: 'V4 导出可分享的单文件版本（一个 HTML 就能看，零外部依赖）', done: true },
+            { text: 'V4 内容管理小后台：在线编辑资料与项目并导出 data.js', done: true },
+            { text: 'V4 访问统计（匿名计入访客）+ 反馈回执闭环', done: true },
+            { text: 'V4 部署与分享优化：分享卡片、图标、站点地图、404 指引', done: true }
           ]
         },
         {
-          title: 'V4 计划',
+          title: 'V5 计划',
           items: [
-            { text: '导出可分享的单文件版本（一个 HTML 就能看）', done: false },
-            { text: '内容管理小后台：在线编辑资料与项目', done: false },
-            { text: '访问统计与反馈闭环', done: false },
-            { text: '部署与域名优化', done: false }
+            { text: '装进桌面：离线可用的 PWA', done: false },
+            { text: '多套配色方案可切换', done: false },
+            { text: '内容多语言切换', done: false },
+            { text: '社区消息搜索与筛选', done: false }
           ]
         }
       ]

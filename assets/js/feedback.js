@@ -34,9 +34,64 @@
   modal.querySelectorAll('[data-close-feedback]').forEach(function (el) {
     el.addEventListener('click', closeModal);
   });
-  document.addEventListener('keydown', function (e) {
-    if (e.key === 'Escape' && !modal.hidden) closeModal();
-  });
+  /* Esc 关闭由 app.js 统一处理（V3），这里不再重复绑定 */
+
+  /* ---------- V4 反馈闭环：本机回执 ---------- */
+  const HISTORY_KEY = 'fb_history';
+  const historySection = document.getElementById('fbHistorySection');
+  const historyList = document.getElementById('fbHistory');
+  const clearBtn = document.querySelector('[data-clear-feedback]');
+
+  function readHistory() {
+    try {
+      const arr = JSON.parse(localStorage.getItem(HISTORY_KEY) || '[]');
+      return Array.isArray(arr) ? arr : [];
+    } catch (e) { return []; }
+  }
+
+  function writeHistory(arr) {
+    try { localStorage.setItem(HISTORY_KEY, JSON.stringify(arr.slice(0, 5))); } catch (e) {}
+  }
+
+  function timeAgo(ts) {
+    const gap = Math.max(0, Date.now() - ts);
+    if (gap < 60000) return '刚刚';
+    if (gap < 3600000) return Math.floor(gap / 60000) + ' 分钟前';
+    if (gap < 86400000) return Math.floor(gap / 3600000) + ' 小时前';
+    return Math.floor(gap / 86400000) + ' 天前';
+  }
+
+  function renderHistory() {
+    if (!historySection || !historyList) return;
+    const arr = readHistory();
+    historySection.hidden = arr.length === 0;
+    historyList.innerHTML = arr.map(function (item) {
+      const text = String(item.content || '').slice(0, 40);
+      return '<li class="fb-history__item">' +
+        '<span class="fb-history__type">' + (item.type || '建议') + '</span>' +
+        '<span class="fb-history__text">' + text.replace(/[<>&]/g, function (c) {
+          return { '<': '&lt;', '>': '&gt;', '&': '&amp;' }[c];
+        }) + (String(item.content || '').length > 40 ? '…' : '') + '</span>' +
+        '<span class="fb-history__meta">已收到 · ' + timeAgo(item.t || 0) + '</span>' +
+        '</li>';
+    }).join('');
+  }
+
+  function pushHistory(type, content) {
+    const arr = readHistory();
+    arr.unshift({ type: type, content: content, t: Date.now() });
+    writeHistory(arr);
+    renderHistory();
+  }
+
+  if (clearBtn) {
+    clearBtn.addEventListener('click', function () {
+      writeHistory([]);
+      renderHistory();
+    });
+  }
+
+  renderHistory();
 
   chips.forEach(function (chip) {
     chip.addEventListener('click', function () {
@@ -115,6 +170,7 @@
       }
 
       try { localStorage.setItem('fb_last', String(Date.now())); } catch (e) {}
+      pushHistory(currentType, content);   /* V4：留下本机回执 */
 
       setStatus('收到了，谢谢你的反馈', 'ok');
       contentEl.value = '';

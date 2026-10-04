@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="robots" content="noindex">
+<title>页面不在这里 · 正在带你去个人主页</title>
+<!-- V4：有人只输了用户名根地址（zhangyuchen0117.github.io）时会走到这里，直接送他到主页 -->
+<meta http-equiv="refresh" content="1;url=/personal-page/">
+<script>location.replace('/personal-page/');</script>
+<style>
+  :root { color-scheme: light dark; }
+  body {
+    margin: 0;
+    min-height: 100dvh;
+    display: grid;
+    place-items: center;
+    background: #f4f3f1;
+    color: #171717;
+    font: 16px/1.7 -apple-system, BlinkMacSystemFont, "PingFang SC", "Microsoft YaHei", sans-serif;
+  }
+  .box { text-align: center; padding: 32px; }
+  a { color: inherit; }
+  @media (prefers-color-scheme: dark) {
+    body { background: #141413; color: #f2f2f0; }
+  }
+</style>
+</head>
+<body>
+  <div class="box">
+    <p>正在带你去个人主页…</p>
+    <p><a href="/personal-page/">没跳过去？点这里</a></p>
+  </div>
+</body>
+</html>

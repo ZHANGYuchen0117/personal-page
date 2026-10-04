@@ -3,7 +3,26 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-<title>我的个人主页 · V2.3 · 微信消息风</title>
+<title>我的个人主页 · V4 · 微信消息风</title>
+
+<!-- V4 分享与收录：标题/描述/分享卡片/图标/站点地址 -->
+<meta name="description" content="张聿辰的个人主页：聊天式界面，可以直接问我问题，也可以到社区留言。">
+<meta name="author" content="张聿辰">
+<meta name="color-scheme" content="light dark">
+<link rel="canonical" href="https://zhangyuchen0117.github.io/personal-page/">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="张聿辰的个人主页">
+<meta property="og:title" content="张聿辰的个人主页 · 微信消息风">
+<meta property="og:description" content="聊天式个人主页：AI 问答、社区留言、深色模式，手机也能用。">
+<meta property="og:url" content="https://zhangyuchen0117.github.io/personal-page/">
+<meta property="og:image" content="https://zhangyuchen0117.github.io/personal-page/assets/img/avatar.jpg">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="张聿辰的个人主页 · 微信消息风">
+<meta name="twitter:description" content="聊天式个人主页：AI 问答、社区留言、深色模式，手机也能用。">
+<meta name="twitter:image" content="https://zhangyuchen0117.github.io/personal-page/assets/img/avatar.jpg">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='16' fill='%23141413'/%3E%3Crect x='12' y='16' width='40' height='24' rx='10' fill='%23f4f3f1'/%3E%3Ccircle cx='24' cy='28' r='2.8' fill='%23141413'/%3E%3Ccircle cx='32' cy='28' r='2.8' fill='%23141413'/%3E%3Ccircle cx='40' cy='28' r='2.8' fill='%23141413'/%3E%3Cpath d='M22 40h13l9 10V40z' fill='%23f4f3f1'/%3E%3C/svg%3E">
+<link rel="apple-touch-icon" href="./assets/img/avatar.jpg">
+<link rel="preload" as="image" href="./assets/img/avatar.jpg">
 
 <!-- 移动端：让浏览器地址栏/状态栏颜色跟随主题 -->
 <meta name="theme-color" id="themeColor" content="#f4f3f1">
@@ -448,6 +467,15 @@
       <button type="submit" class="fb-submit">提交</button>
       <p class="fb-status" id="fbStatus"></p>
     </form>
+
+    <!-- V4 反馈闭环：本机回执，能看到自己提交过什么、什么时间 -->
+    <section class="fb-history" id="fbHistorySection" hidden>
+      <div class="fb-history__head">
+        <h3 class="fb-history__title">我的反馈（本机记录）</h3>
+        <button type="button" class="fb-history__clear" data-clear-feedback>清空</button>
+      </div>
+      <ul class="fb-history__list" id="fbHistory"></ul>
+    </section>
   </div>
 </div>
 
@@ -541,6 +569,7 @@
 <script src="./assets/js/chat.js"></script>
 <script src="./assets/js/app.js"></script>
 <script src="./assets/js/gestures.js"></script>
+<script src="./assets/js/visits.js"></script>
 
 </body>
 </html>

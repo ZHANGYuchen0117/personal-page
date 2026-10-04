@@ -1,0 +1,199 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="robots" content="noindex, nofollow">
+<title>内容小后台 · 编辑个人主页</title>
+<style>
+  :root {
+    --c-bg: #f4f3f1;
+    --c-surface: #ffffff;
+    --c-surface-2: #f7f6f4;
+    --c-border: #e6e5e1;
+    --c-text: #171717;
+    --c-text-2: #333333;
+    --c-text-3: #6e6e6b;
+    --c-accent: #171717;
+    --c-accent-fg: #ffffff;
+    --c-danger: #9a4536;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --c-bg: #141413;
+      --c-surface: #1e1e1d;
+      --c-surface-2: #232322;
+      --c-border: #303030;
+      --c-text: #f2f2f0;
+      --c-text-2: #c8c8c6;
+      --c-text-3: #90908e;
+      --c-accent: #f2f2f0;
+      --c-accent-fg: #141413;
+      --c-danger: #e4937f;
+    }
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    padding: 28px 20px 60px;
+    background: var(--c-bg);
+    color: var(--c-text);
+    font: 15px/1.6 -apple-system, BlinkMacSystemFont, "PingFang SC", "Microsoft YaHei", sans-serif;
+  }
+  .wrap { max-width: 760px; margin: 0 auto; display: flex; flex-direction: column; gap: 22px; }
+  h1 { font-size: 1.35rem; margin: 0; letter-spacing: -.01em; }
+  .hint { color: var(--c-text-3); font-size: .85rem; margin: 0; }
+  section {
+    background: var(--c-surface);
+    border: 1px solid var(--c-border);
+    border-radius: 14px;
+    padding: 16px 18px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+  }
+  h2 { font-size: .95rem; margin: 0; color: var(--c-text-2); }
+  label { font-size: .82rem; color: var(--c-text-3); }
+  .field { display: flex; flex-direction: column; gap: 6px; }
+  input.txt, textarea.txt {
+    width: 100%;
+    font: inherit;
+    font-size: .92rem;
+    color: var(--c-text);
+    background: var(--c-surface-2);
+    border: 1px solid var(--c-border);
+    border-radius: 10px;
+    padding: 10px 12px;
+  }
+  textarea.txt { resize: vertical; }
+  input.txt:focus-visible, textarea.txt:focus-visible, button:focus-visible {
+    outline: 2px solid var(--c-text);
+    outline-offset: 2px;
+  }
+  .row { display: flex; gap: 8px; align-items: flex-start; }
+  .row .name { flex: 1 1 42%; }
+  .row .note { flex: 1 1 58%; }
+  .card { display: flex; flex-direction: column; gap: 8px; padding: 10px; border: 1px dashed var(--c-border); border-radius: 12px; }
+  button {
+    font: inherit;
+    font-size: .88rem;
+    cursor: pointer;
+    border-radius: 10px;
+    border: 1px solid var(--c-border);
+    background: var(--c-surface-2);
+    color: var(--c-text);
+    padding: 9px 14px;
+  }
+  button.primary { background: var(--c-accent); color: var(--c-accent-fg); border-color: var(--c-accent); }
+  button.del {
+    flex: 0 0 auto;
+    width: 34px;
+    height: 38px;
+    padding: 0;
+    color: var(--c-danger);
+    line-height: 1;
+  }
+  .bar { display: flex; gap: 8px; flex-wrap: wrap; }
+  #output, #preview {
+    width: 100%;
+    font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+    font-size: .78rem;
+    white-space: pre;
+    overflow: auto;
+    background: var(--c-surface-2);
+    border: 1px solid var(--c-border);
+    border-radius: 10px;
+    padding: 12px;
+    margin: 0;
+  }
+  #output { min-height: 220px; }
+  #preview { max-height: 220px; white-space: pre-wrap; }
+  #status { font-size: .82rem; color: var(--c-text-3); min-height: 1.2em; margin: 0; }
+  @media (max-width: 560px) {
+    .row { flex-wrap: wrap; }
+    .row .name, .row .note { flex: 1 1 100%; }
+    button { min-height: 44px; }
+    input.txt, textarea.txt { font-size: 16px; }
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <h1>内容小后台</h1>
+    <p class="hint">改完点「生成 data.js」，下载后覆盖 <code>assets/js/data.js</code>。
+      关于我 / 技能 / 项目的 AI 提示词会自动跟着这份数据变，不用手写。</p>
+  </header>
+
+  <section>
+    <h2>关于我</h2>
+    <div class="field">
+      <label for="aboutFacts">事实（一行一条）</label>
+      <textarea class="txt" id="aboutFacts" rows="4"></textarea>
+    </div>
+    <div class="field">
+      <label for="aboutStage">当前阶段</label>
+      <input class="txt" type="text" id="aboutStage">
+    </div>
+  </section>
+
+  <section>
+    <h2>技能</h2>
+    <div id="skillList" style="display:flex;flex-direction:column;gap:8px"></div>
+    <div class="bar"><button type="button" id="addSkill">+ 加一项技能</button></div>
+  </section>
+
+  <section>
+    <h2>项目</h2>
+    <div id="projectList" style="display:flex;flex-direction:column;gap:10px"></div>
+    <div class="bar"><button type="button" id="addProject">+ 加一个项目</button></div>
+  </section>
+
+  <section>
+    <h2>下一步计划</h2>
+    <div class="row">
+      <input class="txt name" type="text" id="planVersion" placeholder="版本，例如 V5">
+      <input class="txt note" type="text" id="planTheme" placeholder="主题，例如 更好用、更好看">
+    </div>
+    <div class="field">
+      <label for="planItems">事项（一行一条）</label>
+      <textarea class="txt" id="planItems" rows="4"></textarea>
+    </div>
+  </section>
+
+  <section>
+    <h2>联系我</h2>
+    <p class="hint" style="margin:0">微信号和二维码至少填一个；两个都空着，页面上不会出现「联系我」框。</p>
+    <div class="row">
+      <input class="txt name" type="text" id="contactWechat" placeholder="微信号，例如 zhangyuchen0117">
+      <input class="txt note" type="text" id="contactLabel" placeholder="按钮文案：复制微信号">
+    </div>
+    <div class="field">
+      <label for="contactQr">二维码图片路径（把图片放进 assets/img/ 再写这里的路径）</label>
+      <input class="txt" type="text" id="contactQr" placeholder="./assets/img/wechat-qr.png">
+    </div>
+    <div class="field">
+      <label for="contactQrTip">二维码下方提示</label>
+      <input class="txt" type="text" id="contactQrTip" placeholder="微信扫一扫，加我好友">
+    </div>
+  </section>
+
+  <section>
+    <h2>生成</h2>
+    <div class="bar">
+      <button type="button" class="primary" id="generate">生成 data.js</button>
+      <button type="button" id="download">下载 data.js</button>
+      <button type="button" id="copy">复制</button>
+      <button type="button" id="previewBtn">看一份 JSON</button>
+      <button type="button" id="reload">还原成站点当前内容</button>
+    </div>
+    <p id="status"></p>
+    <textarea id="output" readonly placeholder="点「生成 data.js」后，这里会出现完整文件内容"></textarea>
+    <pre id="preview"></pre>
+  </section>
+</div>
+
+<script src="./assets/js/data.js"></script>
+<script src="./assets/js/admin.js"></script>
+</body>
+</html>
