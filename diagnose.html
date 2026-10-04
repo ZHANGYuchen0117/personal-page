@@ -1,0 +1,255 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>AI 连接自诊断 · 张聿辰个人主页</title>
+<style>
+  :root { color-scheme: light dark; }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; padding: 20px;
+    font: 15px/1.65 -apple-system, "PingFang SC", "Helvetica Neue", sans-serif;
+    background: #0f1115; color: #e6e8ec;
+  }
+  .wrap { max-width: 720px; margin: 0 auto; }
+  h1 { font-size: 20px; margin: 0 0 6px; }
+  .sub { font-size: 13px; opacity: .62; margin-bottom: 18px; }
+  .bar { display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 16px; }
+  button {
+    font: inherit; font-size: 14px; padding: 9px 16px; border-radius: 9px;
+    border: 1px solid #2c313b; background: #1a1e26; color: #e6e8ec; cursor: pointer;
+  }
+  button.primary { background: #2f6df6; border-color: #2f6df6; color: #fff; }
+  button:disabled { opacity: .45; cursor: default; }
+  .case {
+    border: 1px solid #23272f; border-radius: 11px; padding: 12px 14px;
+    margin-bottom: 10px; background: #14171d;
+  }
+  .case-head { display: flex; align-items: center; gap: 8px; font-weight: 600; font-size: 14px; }
+  .dot { width: 9px; height: 9px; border-radius: 50%; background: #4b5563; flex: none; }
+  .dot.run { background: #d9a441; }
+  .dot.ok  { background: #2fbf71; }
+  .dot.bad { background: #e5534b; }
+  .dot.warn{ background: #d9a441; }
+  .case-body {
+    margin-top: 7px; font: 12.5px/1.6 ui-monospace, Menlo, monospace;
+    white-space: pre-wrap; word-break: break-all; opacity: .9;
+  }
+  .verdict {
+    margin-top: 16px; padding: 13px 15px; border-radius: 11px;
+    border: 1px solid #2c313b; background: #1a1e26; font-size: 14px;
+  }
+  .verdict b { color: #7aa2ff; }
+  textarea {
+    width: 100%; height: 150px; margin-top: 12px; padding: 10px; border-radius: 9px;
+    border: 1px solid #2c313b; background: #0b0d11; color: #cfd3da;
+    font: 12px/1.5 ui-monospace, Menlo, monospace; resize: vertical;
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>AI 连接自诊断</h1>
+  <div class="sub">在出问题的那台设备上、用它自带的浏览器打开本页，然后点「开始检测」。全程只做只读测试，不会修改任何数据。</div>
+
+  <div class="bar">
+    <button id="run" class="primary">开始检测</button>
+    <button id="copy" disabled>复制检测结果</button>
+  </div>
+
+  <div id="cases"></div>
+  <div id="verdict" class="verdict" hidden></div>
+
+  <textarea id="dump" hidden readonly placeholder="检测结果会出现在这里，可直接全选复制"></textarea>
+</div>
+
+<script>
+var FN   = 'https://qnctdjwoylhfbqigqkje.supabase.co/functions/v1/llm-proxy';
+var REST = 'https://qnctdjwoylhfbqigqkje.supabase.co/rest/v1/community_messages?select=id&limit=1';
+var KEY  = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InFuY3RkandveWxoZmJxaWdxa2plIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODk2MzAxODYsImV4cCI6MjEwNTIwNjE4Nn0.j6KMMpwOHU_hwAtL3WNYO7EbVsSwJ5ZhvWa1MhyG1l8';
+
+var report = [];
+var casesEl = document.getElementById('cases');
+
+function addCase(id, title) {
+  var el = document.createElement('div');
+  el.className = 'case';
+  el.innerHTML = '<div class="case-head"><span class="dot run"></span><span>' + title + '</span></div><div class="case-body">检测中…</div>';
+  casesEl.appendChild(el);
+  return { el: el, dot: el.querySelector('.dot'), body: el.querySelector('.case-body'), id: id, title: title };
+}
+
+function finish(c, ok, text) {
+  c.dot.className = 'dot ' + (ok === true ? 'ok' : ok === 'warn' ? 'warn' : 'bad');
+  c.body.textContent = text;
+  report.push('[' + (ok === true ? 'OK  ' : ok === 'warn' ? 'WARN' : 'BAD ') + '] ' + c.id + ' ' + c.title + '\n        ' + text.replace(/\n/g, '\n        '));
+}
+
+function ms(t0) { return Math.round(performance.now() - t0); }
+
+function describe(e) {
+  if (!e) return '(无错误)';
+  return (e.name || 'Error') + ': ' + (e.message || String(e));
+}
+
+/* 带超时的 fetch，避免网络卡住时页面永远不返回 */
+function tfetch(url, opts, ms_limit) {
+  return new Promise(function (resolve, reject) {
+    var timer = setTimeout(function () { reject(new Error('本地超时(' + ms_limit + 'ms)未返回')); }, ms_limit);
+    fetch(url, opts).then(function (r) { clearTimeout(timer); resolve(r); },
+                          function (e) { clearTimeout(timer); reject(e); });
+  });
+}
+
+async function runAll() {
+  document.getElementById('run').disabled = true;
+  casesEl.innerHTML = '';
+  report = [];
+
+  /* 0. 环境 */
+  var env = addCase('ENV', '运行环境');
+  var info = [
+    '浏览器: ' + navigator.userAgent,
+    '安全上下文(HTTPS): ' + (window.isSecureContext ? '是' : '否（CORS 行为会不同！）'),
+    '页面地址: ' + location.origin,
+    'ReadableStream 支持: ' + (typeof ReadableStream !== 'undefined' ? '是' : '否'),
+    'AbortController 支持: ' + (typeof AbortController !== 'undefined' ? '是' : '否'),
+    'TextDecoder 支持: ' + (typeof TextDecoder !== 'undefined' ? '是' : '否')
+  ].join('\n');
+  finish(env, window.isSecureContext ? true : 'warn', info);
+  await new Promise(function (r) { setTimeout(r, 120); });
+
+  /* 1. 留言板接口（对照：同一个域名，已知多数设备正常） */
+  var t1 = addCase('T1', '对照：留言板接口（同一域名的普通接口）');
+  var s1 = performance.now();
+  try {
+    var r1 = await tfetch(REST, { headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + KEY } }, 15000);
+    finish(t1, true, 'HTTP ' + r1.status + '，耗时 ' + ms(s1) + 'ms\n说明：域名可达。Supabase 的权限层返回 401/200 都算通。');
+    await r1.text();
+  } catch (e) {
+    finish(t1, false, '失败，耗时 ' + ms(s1) + 'ms\n' + describe(e) + '\n说明：连这个都失败 → 设备到 Supabase 域名的网络不通。');
+  }
+  await new Promise(function (r) { setTimeout(r, 120); });
+
+  /* 2. 纯连接层：用 no-cors 发一个「简单请求」，不触发跨域预检 */
+  var t2 = addCase('T2', '连接层：no-cors 简单请求（跳过预检，只看能不能连上）');
+  var s2 = performance.now();
+  try {
+    await tfetch(FN, { mode: 'no-cors', method: 'POST', headers: { 'Content-Type': 'text/plain' }, body: 'ping' }, 15000);
+    finish(t2, true, '已连上（返回不透明响应），耗时 ' + ms(s2) + 'ms\n说明：网络能到达 AI 函数。若下一步失败，问题就在跨域预检。');
+  } catch (e) {
+    finish(t2, false, '失败，耗时 ' + ms(s2) + 'ms\n' + describe(e) + '\n说明：连接层就断了 → 是这个域名/这条链路被网络环境拦截。');
+  }
+  await new Promise(function (r) { setTimeout(r, 120); });
+
+  /* 3. AI 接口：只等响应头，不读内容（把「预检/CORS」和「流式读取」分开） */
+  var t3 = addCase('T3', 'AI 接口：只等响应头（不读内容）');
+  var s3 = performance.now();
+  var t3ok = false;
+  try {
+    var r3 = await tfetch(FN, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + KEY },
+      body: JSON.stringify({ message: '你好' })
+    }, 15000);
+    var ct = r3.headers.get('content-type') || '(未暴露)';
+    finish(t3, true, 'HTTP ' + r3.status + '，content-type: ' + ct + '，耗时 ' + ms(s3) + 'ms\n说明：预检与跨域都通过了，请求本身没问题。');
+    t3ok = true;
+    if (r3.body && r3.body.cancel) { try { r3.body.cancel(); } catch (e) {} }
+  } catch (e) {
+    finish(t3, false, '失败，耗时 ' + ms(s3) + 'ms\n' + describe(e) + '\n说明：预检/CORS 这一层没过（与 T2 对照即可定位）。');
+  }
+  await new Promise(function (r) { setTimeout(r, 120); });
+
+  /* 4. AI 接口：完全照抄页面里的做法（含流式读取），这是用户实际走的路径 */
+  var t4 = addCase('T4', 'AI 接口：完整路径（和网页里一模一样的调用）');
+  var s4 = performance.now();
+  try {
+    var res = await tfetch(FN, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + KEY },
+      body: JSON.stringify({ message: '你好' })
+    }, 20000);
+    if (!res.ok) {
+      var et = await res.text();
+      finish(t4, false, 'HTTP ' + res.status + '，耗时 ' + ms(s4) + 'ms\n响应: ' + et.slice(0, 200));
+    } else {
+      var reader = res.body.getReader();
+      var dec = new TextDecoder('utf-8');
+      var acc = '', chunks = 0;
+      var t0 = performance.now();
+      while (true) {
+        var step = await reader.read();
+        if (step.done) break;
+        chunks++;
+        acc += dec.decode(step.value, { stream: true });
+        if (acc.length > 300 || performance.now() - t0 > 12000) break;
+      }
+      finish(t4, true, 'HTTP ' + res.status + '，收到 ' + chunks + ' 个数据块，首包耗时 ' + ms(s4) + 'ms\n内容开头: ' + acc.replace(/\n/g, ' ').slice(0, 120));
+    }
+  } catch (e) {
+    finish(t4, false, '失败，耗时 ' + ms(s4) + 'ms\n' + describe(e) + '\n说明：这就是网页上看到的报错来源。');
+  }
+
+  /* 结论 */
+  var v = document.getElementById('verdict');
+  v.hidden = false;
+  v.innerHTML = verdictText();
+  var dumpEl = document.getElementById('dump');
+  dumpEl.hidden = false;
+  dumpEl.value = '=== AI 连接自诊断 ===\n时间: ' + new Date().toString() + '\n\n' + report.join('\n\n') + '\n\n=== 结论 ===\n' + v.textContent;
+  document.getElementById('copy').disabled = false;
+  document.getElementById('run').disabled = false;
+  document.getElementById('run').textContent = '重新检测';
+
+  /* 仅在本地自动化验证时（?report=1）把结果回传给本地接收器。
+     给真实用户看的线上页面不会带这个参数，因此不会有任何回传。 */
+  if (location.search.indexOf('report=1') !== -1) {
+    try {
+      fetch('http://127.0.0.1:8767/result', {
+        method: 'POST', mode: 'no-cors', headers: { 'Content-Type': 'text/plain' },
+        body: 'DIAG_RESULT_BEGIN\n' + dumpEl.value + '\nDIAG_RESULT_END'
+      });
+    } catch (e) {}
+  }
+}
+
+var lastVerdict = '';
+function verdictText() {
+  /* report 条目形如 "[OK  ] T2 连接层…"，所以按 "T2 " 这个整体去找，别按开头找 */
+  function get(id) {
+    for (var i = 0; i < report.length; i++) {
+      if (report[i].indexOf('] ' + id + ' ') !== -1) return report[i].split('\n')[0];
+    }
+    return '';
+  }
+  var t1 = /^\[OK/.test(get('T1')), t2 = /^\[OK/.test(get('T2')), t3 = /^\[OK/.test(get('T3')), t4 = /^\[OK/.test(get('T4'));
+  var msg;
+  if (t4) msg = '本次检测四项全部通过 —— 说明这台设备此刻能正常调用 AI。若网页上仍报错，请把网页的报错原文一起发来。';
+  else if (!t2) msg = '连最基础的连接层都失败了（T2） → 是<b>这台设备的网络环境</b>连不上 Supabase 这个域名（常见于运营商/校园网/公司网络/部分代理）。这不是网页代码的问题，换网络（如手机热点）再试通常就好。';
+  else if (!t3) msg = '连接层能通（T2 通过），但 AI 接口的跨域请求被挡（T3 失败） → 属于<b>浏览器的跨域策略</b>问题，需要调整后端接口的跨域设置。';
+  else msg = '请求与跨域都通过了（T3 通过），但完整调用失败（T4） → 问题出在<b>流式读取环节</b>，需要更换数据传输方式。';
+  lastVerdict = msg.replace(/<[^>]+>/g, '');
+  return '<b>结论：</b>' + msg;
+}
+
+document.getElementById('run').addEventListener('click', runAll);
+/* 打开即自动跑一遍，用户只需读结论 */
+window.addEventListener('load', function () { setTimeout(runAll, 400); });
+
+document.getElementById('copy').addEventListener('click', function () {
+  var text = document.getElementById('dump').value;
+  var done = function () { var b = document.getElementById('copy'); b.textContent = '已复制 ✓'; setTimeout(function () { b.textContent = '复制检测结果'; }, 1800); };
+  if (navigator.clipboard && navigator.clipboard.writeText) {
+    navigator.clipboard.writeText(text).then(done, function () { manual(); });
+  } else { manual(); }
+  function manual() {
+    var t = document.getElementById('dump');
+    t.hidden = false; t.focus(); t.select();
+    try { document.execCommand('copy'); done(); } catch (e) { alert('请手动全选复制下方文本'); }
+  }
+});
+</script>
+</body>
+</html>
