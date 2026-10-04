@@ -167,6 +167,50 @@
     return row;
   }
 
+  /* ---------- AI 连不上时的本地兜底 ----------
+     数据本来就在页面上（PROFILE_DATA.content），不需要网络。
+     按关键词挑最贴近的一段回给访客，答不全但至少不会显示「Load failed」。 */
+  function localAnswer(question) {
+    const content = (window.PROFILE_DATA && window.PROFILE_DATA.content) || {};
+    const q = String(question || '');
+
+    function hit() {
+      for (let i = 0; i < arguments.length; i++) {
+        if (q.indexOf(arguments[i]) !== -1) return true;
+      }
+      return false;
+    }
+
+    if (hit('专业', '学什么', '学校', '大一', '学院')) {
+      const fact = (content.about && content.about.facts || []).filter(function (f) {
+        return f.indexOf('专业') !== -1;
+      })[0];
+      if (fact) return fact + '。';
+    }
+    if (hit('技能', '会什么', '会些什么', '都会什么', '会啥', '会点啥', '擅长', '拿手', '能力', '技术栈')) {
+      return '他的技能包括：' + (content.skills || []).map(function (s) {
+        return s.note ? s.name + '（' + s.note + '）' : s.name;
+      }).join('、') + '。';
+    }
+    if (hit('项目', '作品', '做过', '仓库', 'github')) {
+      return '他做过的项目：' + (content.projects || []).map(function (p) {
+        return p.desc ? p.name + '（' + p.desc + '）' : p.name;
+      }).join('；') + '。';
+    }
+    if (hit('计划', '下一步', '接下来', '规划', '以后')) {
+      return '接下来的计划：' + (content.plan || []).map(function (s) {
+        return s.version + ' ' + s.theme + '（' + s.items.join('、') + '）';
+      }).join('；') + '。';
+    }
+    if (hit('联系', '微信', '加好友', '怎么找', '私信')) {
+      return '可以在上面的「联系我」里扫微信二维码加他。';
+    }
+    if (content.about && content.about.facts && content.about.facts.length) {
+      return content.about.facts.join('，') + '。' + (content.about.stage || '');
+    }
+    return '';
+  }
+
   /* ---------- 统一发送逻辑：菜单点击 / 输入框发送 都走这里 ---------- */
   function sendQuestion(questionText) {
     if (!questionText) return;
@@ -198,8 +242,17 @@
             bubble.innerHTML = linkify(fullText);
           },
           function (errMsg) {
-            bubble.textContent = '抱歉，' + errMsg;
+            /* AI 连不上时别给访客甩报错：改用页面上现成的资料兜底回答。
+               资料本来就在 PROFILE_DATA.content 里，不需要网络。 */
+            const local = localAnswer(questionText);
             bubble.classList.add('chat__bubble--error');
+            if (local) {
+              bubble.innerHTML =
+                '<span class="chat__offline">AI 暂时连不上（' + errMsg + '），先用本地资料回答：</span>' +
+                '<br>' + linkify(local);
+            } else {
+              bubble.textContent = '抱歉，' + errMsg;
+            }
           }
         );
       } else {

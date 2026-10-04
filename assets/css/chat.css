@@ -370,6 +370,14 @@
   color: var(--c-text-3);
 }
 
+/* AI 连不上、走本地兜底时的那行小字说明 */
+.chat__offline {
+  display: inline-block;
+  margin-bottom: 4px;
+  font-size: 12px;
+  opacity: 0.75;
+}
+
 /* 回答里的链接（V2.2）：继承文字色，下划线提示可点 */
 .chat__bubble a {
   color: inherit;

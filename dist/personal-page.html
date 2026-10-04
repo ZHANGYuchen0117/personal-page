@@ -423,6 +423,14 @@
   color: var(--c-text-3);
 }
 
+/* AI 连不上、走本地兜底时的那行小字说明 */
+.chat__offline {
+  display: inline-block;
+  margin-bottom: 4px;
+  font-size: 12px;
+  opacity: 0.75;
+}
+
 /* 回答里的链接（V2.2）：继承文字色，下划线提示可点 */
 .chat__bubble a {
   color: inherit;
@@ -1696,7 +1704,7 @@
     /* 关于我：用来介绍自己的事实 + 当前阶段 */
     about: {
       facts: [
-        '计算机科学与技术专业大一学生',
+        '智能医学工程专业大一学生',
         '对 Web 开发、AI 应用和产品设计感兴趣'
       ],
       stage: '个人主页已迭代到 V4，正在推进 V5 计划'
@@ -1715,7 +1723,7 @@
     projects: [
       {
         name: '个人主页',
-        desc: '聊天式页面，已迭代到 V3：AI 问答、反馈入口、社区注册与发言（头像存云端）、消息实时推送与分页、手机端适配',
+        desc: '聊天式页面，已迭代到 V4：AI 问答、反馈入口、社区注册与发言（头像存云端）、消息实时推送与分页、手机端适配、单文件版与内容小后台',
         link: 'https://github.com/ZHANGYuchen0117/personal-page'
       },
       { name: '校园小程序', desc: '需求调研与原型' },
@@ -1778,7 +1786,7 @@
     /* 开场依次弹出的消息 */
     introMessages: [
       { type: 'profile', name: NAME },
-      { type: 'text', text: '大一 · 计算机科学与技术' },
+      { type: 'text', text: '大一 · 智能医学工程' },
       { type: 'text', text: '探索者' }
     ],
 
@@ -2827,10 +2835,26 @@ window.SUPABASE_CONFIG = {
 // assets/js/ai.js
 const AI_CONFIG = {
   endpoint: 'https://qnctdjwoylhfbqigqkje.supabase.co/functions/v1/llm-proxy',
-  anonKey: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InFuY3RkandveWxoZmJxaWdxa2plIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODk2MzAxODYsImV4cCI6MjEwNTIwNjE4Nn0.j6KMMpwOHU_hwAtL3WNYO7EbVsSwJ5ZhvWa1MhyG1l8'
+  anonKey: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InFuY3RkandveWxoZmJxaWdxa2plIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODk2MzAxODYsImV4cCI6MjEwNTIwNjE4Nn0.j6KMMpwOHU_hwAtL3WNYO7EbVsSwJ5ZhvWa1MhyG1l8',
+  timeout: 20000   /* 兜住「一直转圈」：超过这个时间就放弃，让调用方走兜底 */
 };
 
+/* 把各种底层报错翻译成访客看得懂的说明。
+   浏览器原始报错在 Chrome 是 "Failed to fetch"、Safari 是 "Load failed"，
+   直接显示给访客毫无意义。 */
+function friendlyAIError(err) {
+  if (err && err.name === 'AbortError') return 'AI 响应超时了，请稍后重试';
+  const msg = String((err && err.message) || '');
+  if (err instanceof TypeError || /load failed|failed to fetch|networkerror|network request failed/i.test(msg)) {
+    return '当前网络连不上 AI 服务，换个网络再试试';
+  }
+  if (/^API \d/.test(msg)) return 'AI 服务暂时不可用，请稍后重试';
+  return msg || 'AI 暂时无法响应';
+}
+
 async function callLLM(userMessage, onChunk, onDone, onError) {
+  const controller = (typeof AbortController !== 'undefined') ? new AbortController() : null;
+  const timer = controller ? setTimeout(function () { controller.abort(); }, AI_CONFIG.timeout) : null;
   try {
     const response = await fetch(AI_CONFIG.endpoint, {
       method: 'POST',
@@ -2838,7 +2862,8 @@ async function callLLM(userMessage, onChunk, onDone, onError) {
         'Content-Type': 'application/json',
         'Authorization': 'Bearer ' + AI_CONFIG.anonKey
       },
-      body: JSON.stringify({ message: userMessage })
+      body: JSON.stringify({ message: userMessage }),
+      signal: controller ? controller.signal : undefined
     });
 
     if (!response.ok) {
@@ -2877,8 +2902,11 @@ async function callLLM(userMessage, onChunk, onDone, onError) {
 
     if (onDone) onDone(fullText);
   } catch (err) {
-    console.error('[ai.js]', err);
-    if (onError) onError(err.message || 'AI 暂时无法响应');
+    /* 控制台保留原始报错（方便排查），给访客的则是一句人话 */
+    console.error('[ai.js] 原始错误:', err && err.name, err && err.message);
+    if (onError) onError(friendlyAIError(err));
+  } finally {
+    if (timer) clearTimeout(timer);
   }
 }
 </script>
@@ -3052,6 +3080,50 @@ async function callLLM(userMessage, onChunk, onDone, onError) {
     return row;
   }
 
+  /* ---------- AI 连不上时的本地兜底 ----------
+     数据本来就在页面上（PROFILE_DATA.content），不需要网络。
+     按关键词挑最贴近的一段回给访客，答不全但至少不会显示「Load failed」。 */
+  function localAnswer(question) {
+    const content = (window.PROFILE_DATA && window.PROFILE_DATA.content) || {};
+    const q = String(question || '');
+
+    function hit() {
+      for (let i = 0; i < arguments.length; i++) {
+        if (q.indexOf(arguments[i]) !== -1) return true;
+      }
+      return false;
+    }
+
+    if (hit('专业', '学什么', '学校', '大一', '学院')) {
+      const fact = (content.about && content.about.facts || []).filter(function (f) {
+        return f.indexOf('专业') !== -1;
+      })[0];
+      if (fact) return fact + '。';
+    }
+    if (hit('技能', '会什么', '会些什么', '都会什么', '会啥', '会点啥', '擅长', '拿手', '能力', '技术栈')) {
+      return '他的技能包括：' + (content.skills || []).map(function (s) {
+        return s.note ? s.name + '（' + s.note + '）' : s.name;
+      }).join('、') + '。';
+    }
+    if (hit('项目', '作品', '做过', '仓库', 'github')) {
+      return '他做过的项目：' + (content.projects || []).map(function (p) {
+        return p.desc ? p.name + '（' + p.desc + '）' : p.name;
+      }).join('；') + '。';
+    }
+    if (hit('计划', '下一步', '接下来', '规划', '以后')) {
+      return '接下来的计划：' + (content.plan || []).map(function (s) {
+        return s.version + ' ' + s.theme + '（' + s.items.join('、') + '）';
+      }).join('；') + '。';
+    }
+    if (hit('联系', '微信', '加好友', '怎么找', '私信')) {
+      return '可以在上面的「联系我」里扫微信二维码加他。';
+    }
+    if (content.about && content.about.facts && content.about.facts.length) {
+      return content.about.facts.join('，') + '。' + (content.about.stage || '');
+    }
+    return '';
+  }
+
   /* ---------- 统一发送逻辑：菜单点击 / 输入框发送 都走这里 ---------- */
   function sendQuestion(questionText) {
     if (!questionText) return;
@@ -3083,8 +3155,17 @@ async function callLLM(userMessage, onChunk, onDone, onError) {
             bubble.innerHTML = linkify(fullText);
           },
           function (errMsg) {
-            bubble.textContent = '抱歉，' + errMsg;
+            /* AI 连不上时别给访客甩报错：改用页面上现成的资料兜底回答。
+               资料本来就在 PROFILE_DATA.content 里，不需要网络。 */
+            const local = localAnswer(questionText);
             bubble.classList.add('chat__bubble--error');
+            if (local) {
+              bubble.innerHTML =
+                '<span class="chat__offline">AI 暂时连不上（' + errMsg + '），先用本地资料回答：</span>' +
+                '<br>' + linkify(local);
+            } else {
+              bubble.textContent = '抱歉，' + errMsg;
+            }
           }
         );
       } else {
