@@ -378,6 +378,35 @@
   opacity: 0.75;
 }
 
+/* 兜底/中断时的操作区：一键重试 */
+.chat__acts {
+  margin-top: 8px;
+}
+
+.chat__retry {
+  padding: 3px 12px;
+  border: 1px solid currentColor;
+  border-radius: 999px;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  font-size: 12px;
+  line-height: 1.6;
+  cursor: pointer;
+  opacity: 0.85;
+  transition: opacity 0.15s ease, background-color 0.15s ease;
+}
+
+.chat__retry:hover,
+.chat__retry:focus-visible {
+  opacity: 1;
+  background: rgba(127, 127, 127, 0.14);
+}
+
+.chat__retry:active {
+  opacity: 0.7;
+}
+
 /* 回答里的链接（V2.2）：继承文字色，下划线提示可点 */
 .chat__bubble a {
   color: inherit;

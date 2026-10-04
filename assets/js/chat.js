@@ -211,6 +211,37 @@
     return '';
   }
 
+  /* ---------- AI 回答缓存 ----------
+     网络时好时坏时，让「问过的问题」第二次能秒回真答案：
+     答成功就存下来，之后 AI 连不上就直接拿上次的答案顶上。
+     只存在访客自己浏览器里，最多留 40 条。 */
+  const CACHE_KEY = 'ai_cache_v1';
+  const CACHE_MAX = 40;
+
+  function cacheGet(question) {
+    try {
+      const all = JSON.parse(localStorage.getItem(CACHE_KEY) || '{}');
+      const hit = all[question];
+      return (hit && hit.a) ? hit.a : '';
+    } catch (e) {
+      return '';
+    }
+  }
+
+  function cacheSet(question, answer) {
+    if (!question || !answer) return;
+    try {
+      const all = JSON.parse(localStorage.getItem(CACHE_KEY) || '{}');
+      all[question] = { a: answer, t: Date.now() };
+      const keys = Object.keys(all);
+      if (keys.length > CACHE_MAX) {
+        keys.sort(function (x, y) { return (all[x].t || 0) - (all[y].t || 0); });
+        for (let i = 0; i < keys.length - CACHE_MAX; i++) delete all[keys[i]];
+      }
+      localStorage.setItem(CACHE_KEY, JSON.stringify(all));
+    } catch (e) {}
+  }
+
   /* ---------- 统一发送逻辑：菜单点击 / 输入框发送 都走这里 ---------- */
   function sendQuestion(questionText) {
     if (!questionText) return;
@@ -246,18 +277,40 @@
           },
           function (fullText) {
             bubble.innerHTML = linkify(fullText);
+            cacheSet(questionText, fullText);   /* 存下来，下次网络不好也能直接用 */
           },
           function (errMsg) {
-            /* AI 连不上时别给访客甩报错：改用页面上现成的资料兜底回答。
-               资料本来就在 PROFILE_DATA.content 里，不需要网络。 */
-            const local = localAnswer(questionText);
+            /* AI 连不上时别给访客甩报错。
+               优先用「上次问过同一问题的答案」（网络不好也能秒回真内容），
+               没有缓存就退回页面上现成的资料——两者都不需要网络。 */
+            const cached = cacheGet(questionText);
+            const local = cached ? '' : localAnswer(questionText);
             bubble.classList.add('chat__bubble--error');
-            if (local) {
-              bubble.innerHTML =
-                '<span class="chat__offline">AI 暂时连不上（' + errMsg + '），先用本地资料回答：</span>' +
-                '<br>' + linkify(local);
+
+            let html;
+            if (cached) {
+              html = '<span class="chat__offline">网络不稳，先给你上次问过的答案：</span>' +
+                     '<br>' + linkify(cached);
+            } else if (local) {
+              html = '<span class="chat__offline">AI 暂时连不上（' + errMsg + '），先用本地资料回答：</span>' +
+                     '<br>' + linkify(local);
             } else {
-              bubble.textContent = '抱歉，' + errMsg;
+              html = escapeHtml('抱歉，' + errMsg);
+            }
+
+            /* 一键重试：网络恢复后不用重新打字 */
+            html += '<div class="chat__acts">' +
+                      '<button type="button" class="chat__retry">重试</button>' +
+                    '</div>';
+            bubble.innerHTML = html;
+
+            const retryBtn = bubble.querySelector('.chat__retry');
+            if (retryBtn) {
+              retryBtn.addEventListener('click', function () {
+                const row = bubble.closest('.chat__row');
+                if (row && row.parentNode) row.parentNode.removeChild(row);
+                sendQuestion(questionText);
+              });
             }
           }
         );
