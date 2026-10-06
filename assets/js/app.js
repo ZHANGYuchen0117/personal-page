@@ -70,7 +70,10 @@
   }
 
   /* ---------- V3 键盘操作：Esc 关闭任意弹窗 + Tab 焦点循环 ---------- */
-  const MODALS = ['communityModal', 'feedbackModal', 'changelogModal', 'communityRegisterModal'];
+  /* 顺序 = 叠放顺序，最后一个是「最上层」，Esc 优先关它。
+     V5：补上公告栏；注册弹窗的真实 id 是 registerModal（原来写的
+     communityRegisterModal 根本取不到元素，导致注册弹窗按 Esc 关不掉） */
+  const MODALS = ['communityModal', 'feedbackModal', 'changelogModal', 'announcementModal', 'registerModal'];
 
   function visibleModals() {
     return MODALS.map(function (id) { return document.getElementById(id); })

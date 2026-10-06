@@ -11,6 +11,167 @@
   padding: 28px 28px 24px;
 }
 
+/* ---------- V5 搜索与筛选 ---------- */
+.community__tools {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 10px;
+}
+
+.community__search {
+  position: relative;
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+}
+
+.community__search-icon {
+  position: absolute;
+  left: 11px;
+  color: var(--c-text-3);
+  pointer-events: none;
+}
+
+.community__search-input {
+  width: 100%;
+  font: inherit;
+  font-size: .86rem;
+  color: var(--c-text);
+  background: var(--c-surface-2);
+  border: 1px solid var(--c-border-2);
+  border-radius: 999px;
+  padding: 8px 34px 8px 32px;
+  outline: none;
+  transition: border-color .18s, background .18s;
+}
+.community__search-input::placeholder { color: var(--c-text-3); }
+.community__search-input:focus {
+  border-color: var(--c-text-3);
+  background: var(--c-surface);
+}
+/* 用自己画的清除按钮，去掉 Safari 原生的那个 */
+.community__search-input::-webkit-search-cancel-button {
+  -webkit-appearance: none;
+  appearance: none;
+}
+
+.community__search-clear {
+  position: absolute;
+  right: 5px;
+  width: 26px;
+  height: 26px;
+  display: grid;
+  place-items: center;
+  border: none;
+  border-radius: 50%;
+  background: transparent;
+  color: var(--c-text-3);
+  cursor: pointer;
+  transition: color .18s, background .18s;
+}
+.community__search-clear[hidden] { display: none; }
+.community__search-clear:hover {
+  color: var(--c-text);
+  background: var(--c-surface-3);
+}
+
+.community__filters {
+  flex-shrink: 0;
+  display: flex;
+  gap: 4px;
+}
+
+.community__filter {
+  font: inherit;
+  font-size: .78rem;
+  white-space: nowrap;
+  color: var(--c-text-3);
+  background: transparent;
+  border: 1px solid var(--c-border-2);
+  border-radius: 999px;
+  padding: 7px 12px;
+  cursor: pointer;
+  transition: color .18s, background .18s, border-color .18s;
+}
+.community__filter:hover { color: var(--c-text); }
+.community__filter.is-active {
+  color: var(--c-invert-fg);
+  background: var(--c-invert-bg);
+  border-color: var(--c-invert-bg);
+}
+.community__filter[hidden] { display: none; }
+
+/* 结果计数 */
+.community__count {
+  flex-shrink: 0;
+  font-size: .74rem;
+  color: var(--c-text-3);
+  margin: -4px 0 8px;
+}
+.community__count[hidden] { display: none; }
+
+/* 「把更早的消息也加载来搜」 */
+.community__search-more {
+  display: block;
+  width: 100%;
+  font: inherit;
+  font-size: .76rem;
+  color: var(--c-text-3);
+  background: transparent;
+  border: 1px dashed var(--c-border);
+  border-radius: 8px;
+  padding: 7px 10px;
+  margin: -2px 0 8px;
+  cursor: pointer;
+  transition: color .18s, border-color .18s, background .18s;
+}
+.community__search-more[hidden] { display: none; }
+.community__search-more:hover:not(:disabled) {
+  color: var(--c-text);
+  border-color: var(--c-text-3);
+  background: var(--c-surface-2);
+}
+.community__search-more:disabled { opacity: .6; cursor: default; }
+
+/* 被筛掉的消息：.community__msg 是 flex，必须显式盖掉 [hidden] */
+.community__msg[hidden] { display: none; }
+
+/* 命中关键词高亮 */
+.community__text mark,
+.community__nick mark {
+  background: rgba(255, 196, 0, .38);
+  color: inherit;
+  border-radius: 2px;
+  padding: 0 1px;
+}
+:root[data-theme="dark"] .community__text mark,
+:root[data-theme="dark"] .community__nick mark {
+  background: rgba(255, 196, 0, .28);
+  color: var(--c-text);
+}
+
+/* 搜索没有结果 */
+.community__nomatch {
+  text-align: center;
+  color: var(--c-text-3);
+  font-size: .86rem;
+  padding: 40px 0;
+}
+.community__nomatch[hidden] { display: none; }
+
+@media (max-width: 600px) {
+  .community__tools { gap: 8px; }
+  .community__search-input {
+    font-size: 16px;        /* ≥16px 防 iOS 聚焦缩放 */
+    padding: 10px 34px 10px 32px;
+    min-height: 44px;
+  }
+  .community__filter { padding: 9px 12px; min-height: 40px; }
+}
+
 /* ---------- 消息列表 ---------- */
 .community__list {
   flex: 1;

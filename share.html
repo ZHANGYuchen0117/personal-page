@@ -7,10 +7,10 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-<title>我的个人主页 · V4 · 微信消息风</title>
+<title>我的个人主页 · V5 · 微信消息风</title>
 
 <!-- V4 分享与收录：标题/描述/分享卡片/图标/站点地址 -->
-<meta name="description" content="张聿辰的个人主页：聊天式界面，可以直接问我问题，也可以到社区留言。">
+<meta name="description" content="张聿辰的个人主页：聊天式界面，可以直接问我问题，也可以看公告、到社区留言。">
 <meta name="author" content="张聿辰">
 <meta name="color-scheme" content="light dark">
 <link rel="canonical" href="https://zhangyuchen0117.github.io/personal-page/">
@@ -835,6 +835,167 @@
   padding: 28px 28px 24px;
 }
 
+/* ---------- V5 搜索与筛选 ---------- */
+.community__tools {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 10px;
+}
+
+.community__search {
+  position: relative;
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+}
+
+.community__search-icon {
+  position: absolute;
+  left: 11px;
+  color: var(--c-text-3);
+  pointer-events: none;
+}
+
+.community__search-input {
+  width: 100%;
+  font: inherit;
+  font-size: .86rem;
+  color: var(--c-text);
+  background: var(--c-surface-2);
+  border: 1px solid var(--c-border-2);
+  border-radius: 999px;
+  padding: 8px 34px 8px 32px;
+  outline: none;
+  transition: border-color .18s, background .18s;
+}
+.community__search-input::placeholder { color: var(--c-text-3); }
+.community__search-input:focus {
+  border-color: var(--c-text-3);
+  background: var(--c-surface);
+}
+/* 用自己画的清除按钮，去掉 Safari 原生的那个 */
+.community__search-input::-webkit-search-cancel-button {
+  -webkit-appearance: none;
+  appearance: none;
+}
+
+.community__search-clear {
+  position: absolute;
+  right: 5px;
+  width: 26px;
+  height: 26px;
+  display: grid;
+  place-items: center;
+  border: none;
+  border-radius: 50%;
+  background: transparent;
+  color: var(--c-text-3);
+  cursor: pointer;
+  transition: color .18s, background .18s;
+}
+.community__search-clear[hidden] { display: none; }
+.community__search-clear:hover {
+  color: var(--c-text);
+  background: var(--c-surface-3);
+}
+
+.community__filters {
+  flex-shrink: 0;
+  display: flex;
+  gap: 4px;
+}
+
+.community__filter {
+  font: inherit;
+  font-size: .78rem;
+  white-space: nowrap;
+  color: var(--c-text-3);
+  background: transparent;
+  border: 1px solid var(--c-border-2);
+  border-radius: 999px;
+  padding: 7px 12px;
+  cursor: pointer;
+  transition: color .18s, background .18s, border-color .18s;
+}
+.community__filter:hover { color: var(--c-text); }
+.community__filter.is-active {
+  color: var(--c-invert-fg);
+  background: var(--c-invert-bg);
+  border-color: var(--c-invert-bg);
+}
+.community__filter[hidden] { display: none; }
+
+/* 结果计数 */
+.community__count {
+  flex-shrink: 0;
+  font-size: .74rem;
+  color: var(--c-text-3);
+  margin: -4px 0 8px;
+}
+.community__count[hidden] { display: none; }
+
+/* 「把更早的消息也加载来搜」 */
+.community__search-more {
+  display: block;
+  width: 100%;
+  font: inherit;
+  font-size: .76rem;
+  color: var(--c-text-3);
+  background: transparent;
+  border: 1px dashed var(--c-border);
+  border-radius: 8px;
+  padding: 7px 10px;
+  margin: -2px 0 8px;
+  cursor: pointer;
+  transition: color .18s, border-color .18s, background .18s;
+}
+.community__search-more[hidden] { display: none; }
+.community__search-more:hover:not(:disabled) {
+  color: var(--c-text);
+  border-color: var(--c-text-3);
+  background: var(--c-surface-2);
+}
+.community__search-more:disabled { opacity: .6; cursor: default; }
+
+/* 被筛掉的消息：.community__msg 是 flex，必须显式盖掉 [hidden] */
+.community__msg[hidden] { display: none; }
+
+/* 命中关键词高亮 */
+.community__text mark,
+.community__nick mark {
+  background: rgba(255, 196, 0, .38);
+  color: inherit;
+  border-radius: 2px;
+  padding: 0 1px;
+}
+:root[data-theme="dark"] .community__text mark,
+:root[data-theme="dark"] .community__nick mark {
+  background: rgba(255, 196, 0, .28);
+  color: var(--c-text);
+}
+
+/* 搜索没有结果 */
+.community__nomatch {
+  text-align: center;
+  color: var(--c-text-3);
+  font-size: .86rem;
+  padding: 40px 0;
+}
+.community__nomatch[hidden] { display: none; }
+
+@media (max-width: 600px) {
+  .community__tools { gap: 8px; }
+  .community__search-input {
+    font-size: 16px;        /* ≥16px 防 iOS 聚焦缩放 */
+    padding: 10px 34px 10px 32px;
+    min-height: 44px;
+  }
+  .community__filter { padding: 9px 12px; min-height: 40px; }
+}
+
 /* ---------- 消息列表 ---------- */
 .community__list {
   flex: 1;
@@ -1210,6 +1371,109 @@
   .reg-avatar label:hover img { transform: none; }
 }
 </style>
+<style>/* ./assets/css/announcement.css */
+/* ==========================================================
+ * 公告栏（V5）
+ * 依赖 index.html 里的主题变量（--c-*）
+ * ========================================================== */
+
+/* ---------- 头部：置顶标签 + 更新日期 ---------- */
+.ann__head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: -14px 0 14px;
+}
+
+.ann__badge {
+  flex-shrink: 0;
+  padding: 1px 8px;
+  border-radius: 999px;
+  background: var(--c-invert-bg);
+  color: var(--c-invert-fg);
+  font-size: .66rem;
+  font-weight: 700;
+  letter-spacing: .06em;
+  line-height: 1.7;
+}
+
+.ann__badge[hidden] { display: none; }
+
+.ann__date {
+  font-size: .74rem;
+  color: var(--c-text-3);
+}
+
+/* ---------- 开场一句话 ---------- */
+.ann__intro {
+  font-size: .86rem;
+  color: var(--c-text-3);
+  padding-bottom: 16px;
+  margin-bottom: 20px;
+  border-bottom: 1px solid var(--c-border-2);
+}
+
+.ann__intro[hidden] { display: none; }
+
+/* ---------- 每个板块 ---------- */
+.ann__section { margin-bottom: 22px; }
+.ann__section:last-child { margin-bottom: 0; }
+
+.ann__section-title {
+  position: relative;
+  font-size: .92rem;
+  font-weight: 700;
+  color: var(--c-text);
+  padding-left: 12px;
+  margin-bottom: 10px;
+}
+
+/* 标题左侧的竖条：一眼分出板块 */
+.ann__section-title::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: .32em;
+  width: 3px;
+  height: .95em;
+  border-radius: 2px;
+  background: var(--c-text);
+  opacity: .5;
+}
+
+.ann__list {
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.ann__list li {
+  position: relative;
+  padding-left: 18px;
+  font-size: .87rem;
+  line-height: 1.65;
+  color: var(--c-text-2);
+}
+
+.ann__list li::before {
+  content: '';
+  position: absolute;
+  left: 3px;
+  top: .62em;
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: var(--c-text-3);
+}
+
+/* ---------- 移动端 ---------- */
+@media (max-width: 600px) {
+  .ann__section { margin-bottom: 20px; }
+  .ann__list li { font-size: .84rem; }
+}
+
+</style>
 
 <style>
   /* ==========================================================
@@ -1503,7 +1767,9 @@
   }
   @media (max-width: 400px) {
     .page { padding: 20px 0 0 12px; }
-    .page-foot { padding: 10px 12px 14px 0; }
+    /* V5：页脚多了「公告」，窄屏收紧横向留白与间距，保证一行放得下 */
+    .page-foot { padding: 10px 12px 14px 0; gap: 2px; }
+    .btn-changelog { padding: 13px 10px; letter-spacing: .06em; }
     .modal__panel { padding: 22px 18px 24px; }
   }
 
@@ -1555,6 +1821,7 @@
 
   <!-- 页脚 -->
   <footer class="page-foot">
+    <button type="button" class="btn-changelog" data-open-announcement>公告</button>
     <button type="button" class="btn-changelog" data-open-community>社区</button>
     <button type="button" class="btn-changelog" data-open-feedback>反馈</button>
     <button type="button" class="btn-changelog" data-open-changelog>修改日志</button>
@@ -1638,6 +1905,30 @@
   </div>
 </div>
 
+<!-- ===== 公告栏弹窗（V5） ===== -->
+<div class="modal" id="announcementModal" hidden>
+  <div class="modal__mask" data-close-announcement></div>
+  <div class="modal__panel" role="dialog" aria-modal="true" aria-labelledby="announcementTitle">
+    <button type="button" class="modal__close" data-close-announcement aria-label="关闭">
+      <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor"
+           stroke-width="2.4" stroke-linecap="round">
+        <path d="M6 6l12 12M18 6L6 18"/>
+      </svg>
+    </button>
+    <h2 class="modal__title" id="announcementTitle">公告</h2>
+    <p class="modal__sub">近况一览</p>
+
+    <div class="ann__head">
+      <span class="ann__badge" id="announcementBadge" hidden></span>
+      <span class="ann__date" id="announcementDate"></span>
+    </div>
+
+    <p class="ann__intro" id="announcementIntro"></p>
+
+    <div id="announcementBody"></div>
+  </div>
+</div>
+
 <!-- ===== 社区弹窗 ===== -->
 <div class="modal" id="communityModal" hidden>
   <div class="modal__mask" data-close-community></div>
@@ -1650,6 +1941,34 @@
     </button>
     <h2 class="modal__title" id="communityTitle">社区</h2>
     <p class="modal__sub">路过留句话</p>
+
+    <!-- V5 搜索与筛选 -->
+    <div class="community__tools" id="communityTools">
+      <div class="community__search">
+        <svg class="community__search-icon" viewBox="0 0 24 24" width="14" height="14" fill="none"
+             stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true">
+          <circle cx="11" cy="11" r="7"/>
+          <path d="M16.5 16.5L21 21"/>
+        </svg>
+        <input type="text" class="community__search-input" id="communitySearch"
+               placeholder="搜索消息或昵称…" maxlength="60" autocomplete="off"
+               aria-label="搜索社区消息">
+        <button type="button" class="community__search-clear" id="communitySearchClear"
+                aria-label="清空搜索" hidden>
+          <svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor"
+               stroke-width="2.4" stroke-linecap="round">
+            <path d="M6 6l12 12M18 6L6 18"/>
+          </svg>
+        </button>
+      </div>
+
+      <div class="community__filters" role="group" aria-label="消息筛选">
+        <button type="button" class="community__filter is-active" data-filter="all">全部</button>
+        <button type="button" class="community__filter" data-filter="mine" id="communityFilterMine">我的</button>
+      </div>
+    </div>
+
+    <p class="community__count" id="communityCount" hidden></p>
 
     <div class="community__list" id="communityList">
       <div class="community__empty">还没有消息，说点什么吧</div>
@@ -1736,7 +2055,7 @@
         '智能医学工程专业大一学生',
         '对 Web 开发、AI 应用和产品设计感兴趣'
       ],
-      stage: '个人主页已迭代到 V4，正在推进 V5 计划'
+      stage: '个人主页已迭代到 V5，已上线社区消息搜索与筛选、公告栏'
     },
 
     /* 技能：一项一行，note 补充程度或场景（可省） */
@@ -1752,22 +2071,82 @@
     projects: [
       {
         name: '个人主页',
-        desc: '聊天式页面，已迭代到 V4：AI 问答、反馈入口、社区注册与发言（头像存云端）、消息实时推送与分页、手机端适配、单文件版与内容小后台',
+        desc: '聊天式页面，已迭代到 V5：AI 问答（回答以页面资料为准）、社区注册与发言（头像存云端）、消息实时推送/分页/搜索与筛选、公告栏、反馈入口、手机端适配、单文件版与内容小后台',
         link: 'https://github.com/ZHANGYuchen0117/personal-page'
       },
       { name: '校园小程序', desc: '需求调研与原型' },
       { name: 'Markdown 自学笔记库' }
     ],
 
-    /* 迭代计划：版本 / 主题 / 具体事项 */
+    /* 迭代计划：版本 / 主题 / 具体事项（只写「还没做」的） */
     plan: [
       {
         version: 'V5',
         theme: '更好用、更好看',
-        items: ['装进桌面：离线可用的 PWA', '多套配色方案', '内容多语言切换', '社区消息搜索与筛选']
+        items: ['装进桌面：离线可用的 PWA', '多套配色方案', '内容多语言切换']
       }
     ]
   };
+
+  /* ==========================================================
+   * 公告栏（V5）：打开网页自动弹出，也可以从页脚「公告」进入
+   *
+   * 怎么改内容：直接改下面 sections 里的文字就行，
+   * 每条 items 一行，页面上按顺序显示。
+   * autoShow 控制自动弹出的频率：
+   *   'session'（默认）一个浏览器会话只弹一次
+   *   'daily'  每天第一次打开弹一次
+   *   'always' 每次打开都弹
+   *   'off'    不自动弹，只从页脚进入
+   * ========================================================== */
+  const ANNOUNCEMENT = {
+    date: '2026年10月',
+    badge: '置顶',
+    autoShow: 'session',
+    intro: '近况都写在这里，会随时更新。',
+    sections: [
+      {
+        title: '项目进展',
+        items: [
+          '个人主页已迭代到 V5：社区消息可以搜索和筛选了',
+          '新增公告栏，打开网页就能看到近况',
+          'V4 已完成：AI 问答、社区注册发言、头像云端存储、消息实时推送、手机端适配',
+          '接下来：装进桌面（PWA）、多套配色方案、内容多语言切换'
+        ]
+      },
+      {
+        title: '篮球比赛',
+        items: [
+          '计划参加校内外篮球比赛，以赛代练',
+          '近期重点练体能储备和投篮稳定性',
+          '具体赛程确定后会在公告里更新'
+        ]
+      },
+      {
+        title: '健身计划',
+        items: [
+          '每周 3 次力量训练，胸 / 背 / 腿分开练',
+          '每次训练前后各 10 分钟热身与拉伸',
+          '保证每天 7 小时以上睡眠，不熬夜'
+        ]
+      },
+      {
+        title: '学习计划',
+        items: [
+          '主抓专业基础课，重点是数学和编程',
+          '每周整理一次 Markdown 笔记',
+          '持续做 Web 和 AI 相关的动手项目'
+        ]
+      }
+    ]
+  };
+
+  /* 把公告压成一行，喂给 AI —— 访客问「有什么公告」也能答对 */
+  function announcementText() {
+    return ANNOUNCEMENT.sections.map(function (s) {
+      return s.title + '：' + s.items.join('；');
+    }).join('。');
+  }
 
   /* ---------- 提示词：全部由上面的数据拼出来 ---------- */
   const RULE = '不要补充未提到的内容。';
@@ -1827,6 +2206,7 @@
       '技能：' + skills + '\n' +
       '项目：' + projects + '\n' +
       '接下来：' + plan + '\n' +
+      '最新公告：' + announcementText() + '\n' +
       '联系方式：页面上的「联系我」里有微信二维码，扫码即可加好友。\n' +
       '访客的问题：' + question;
   }
@@ -1843,6 +2223,9 @@
 
     /* 给自由输入的问题补上页面资料（菜单按钮自己有完整 prompt，不走这里） */
     questionPrompt: questionPrompt,
+
+    /* 公告栏（V5）：页脚「公告」入口 + 打开网页自动弹出 */
+    announcement: ANNOUNCEMENT,
 
     /* 开场依次弹出的消息 */
     introMessages: [
@@ -1876,7 +2259,7 @@
 
     changelog: {
       date: '2026年9月',
-      version: 'V4',
+      version: 'V5',
       groups: [
         {
           title: '已完成',
@@ -1901,16 +2284,17 @@
             { text: 'V4 内容管理小后台：在线编辑资料与项目并导出 data.js', done: true },
             { text: 'V4 访问统计（匿名计入访客）+ 反馈回执闭环', done: true },
             { text: 'V4 部署与分享优化：分享卡片、图标、站点地图、404 指引', done: true },
-            { text: 'AI 问答更稳更准：偶发断线自动重试，回答一律以页面资料为准，真连不上就用本地资料兜底', done: true }
+            { text: 'AI 问答更稳更准：偶发断线自动重试，回答一律以页面资料为准，真连不上就用本地资料兜底', done: true },
+            { text: 'V5 社区消息搜索与筛选：按内容或昵称搜索，可只看自己的消息', done: true },
+            { text: 'V5 公告栏：打开网页自动弹出，项目 / 篮球 / 健身 / 学习一屏看完', done: true }
           ]
         },
         {
-          title: 'V5 计划',
+          title: '接下来',
           items: [
             { text: '装进桌面：离线可用的 PWA', done: false },
             { text: '多套配色方案可切换', done: false },
-            { text: '内容多语言切换', done: false },
-            { text: '社区消息搜索与筛选', done: false }
+            { text: '内容多语言切换', done: false }
           ]
         }
       ]
@@ -2146,6 +2530,13 @@ window.SUPABASE_CONFIG = {
   const meNameEl = modal.querySelector('#communityMeName');
   const logoutBtn = modal.querySelector('#communityLogout');
 
+  // V5 搜索与筛选
+  const searchInput = modal.querySelector('#communitySearch');
+  const searchClear = modal.querySelector('#communitySearchClear');
+  const countEl = modal.querySelector('#communityCount');
+  const filterBtns = Array.prototype.slice.call(modal.querySelectorAll('.community__filter'));
+  const mineFilterBtn = modal.querySelector('#communityFilterMine');
+
   // 注册表单
   const regForm = regModal.querySelector('#registerForm');
   const regAvatarInput = regModal.querySelector('#regAvatar');
@@ -2179,6 +2570,11 @@ window.SUPABASE_CONFIG = {
   let pollTimer = null;
   let isOpen = false;
 
+  // V5 搜索与筛选状态
+  let filterMode = 'all';        // 'all' | 'mine'
+  let loadingAll = false;        // 正在把更早的消息全部加载进来
+  let searchedAll = false;       // 是否已经加载到最早一条
+
   /* ---------- 分页按钮：列表顶部 ---------- */
   const moreBtn = document.createElement('button');
   moreBtn.type = 'button';
@@ -2187,6 +2583,20 @@ window.SUPABASE_CONFIG = {
   moreBtn.textContent = '加载更早的消息';
   listEl.insertBefore(moreBtn, listEl.firstChild);
   moreBtn.addEventListener('click', function () { loadOlder(); });
+
+  /* ---------- V5 搜索：无结果提示 + 「把更早的消息也加载来搜」 ---------- */
+  const noMatchEl = document.createElement('div');
+  noMatchEl.className = 'community__nomatch';
+  noMatchEl.textContent = '没有匹配的消息';
+  noMatchEl.hidden = true;
+  listEl.appendChild(noMatchEl);
+
+  const searchMoreBtn = document.createElement('button');
+  searchMoreBtn.type = 'button';
+  searchMoreBtn.className = 'community__search-more';
+  searchMoreBtn.hidden = true;
+  searchMoreBtn.textContent = '把更早的消息也加载来搜';
+  if (countEl) countEl.insertAdjacentElement('afterend', searchMoreBtn);
 
   function updateMoreBtn() {
     moreBtn.disabled = false;
@@ -2321,7 +2731,17 @@ window.SUPABASE_CONFIG = {
     } else {
       guestEl.hidden = false;
       composeEl.hidden = true;
+      /* 没登录就没有「我的消息」可看，自动退回「全部」 */
+      if (filterMode === 'mine') {
+        filterMode = 'all';
+        filterBtns.forEach(function (b) {
+          b.classList.toggle('is-active', b.getAttribute('data-filter') === 'all');
+        });
+      }
     }
+
+    if (mineFilterBtn) mineFilterBtn.hidden = !currentUser;
+    applyFilter();
   }
 
   /* ---------- 通用 ---------- */
@@ -2359,6 +2779,12 @@ window.SUPABASE_CONFIG = {
         '<div class="community__text">' + escapeHtml(msg.content) + '</div>' +
       '</div>';
 
+    /* V5 搜索：另外存一份原文。高亮要反复重画这块内容，
+       不能直接读 innerHTML —— 里面可能已经有 <mark> 了 */
+    row.querySelector('.community__nick').dataset.raw = msg.nickname || '访客';
+    row.querySelector('.community__text').dataset.raw =
+      msg.content == null ? '' : String(msg.content);
+
     // 头像加载失败（比如早期内嵌图或链接失效）就回退默认头像
     const img = row.querySelector('.community__msg-avatar');
     img.addEventListener('error', function () {
@@ -2368,7 +2794,139 @@ window.SUPABASE_CONFIG = {
     if (prepend) listEl.insertBefore(row, moreBtn.nextSibling);
     else listEl.appendChild(row);
 
+    applyFilter();   /* V5：新到的消息也要按当前搜索 / 筛选条件处理 */
     return row;
+  }
+
+  /* ---------- V5 搜索与筛选 ---------- */
+  function allRows() {
+    return Array.prototype.slice.call(listEl.querySelectorAll('.community__msg'));
+  }
+
+  /* 把命中的关键词包成 <mark>；raw 一律先转义，避免注入 */
+  function highlight(raw, kw) {
+    const text = String(raw == null ? '' : raw);
+    if (!kw) return escapeHtml(text);
+    const lowText = text.toLowerCase();
+    const lowKw = kw.toLowerCase();
+    if (!lowKw) return escapeHtml(text);
+
+    let out = '';
+    let from = 0;
+    let guard = 0;
+    while (guard++ < 300) {
+      const at = lowText.indexOf(lowKw, from);
+      if (at === -1) {
+        out += escapeHtml(text.slice(from));
+        break;
+      }
+      out += escapeHtml(text.slice(from, at)) +
+             '<mark>' + escapeHtml(text.slice(at, at + lowKw.length)) + '</mark>';
+      from = at + lowKw.length;
+    }
+    return out;
+  }
+
+  function applyFilter() {
+    if (!searchInput || !countEl) return;
+
+    const kw = searchInput.value.trim();
+    const filtering = !!kw || filterMode === 'mine';
+    let shown = 0;
+
+    allRows().forEach(function (row) {
+      const textEl = row.querySelector('.community__text');
+      const nickEl = row.querySelector('.community__nick');
+
+      if (textEl) textEl.innerHTML = highlight(textEl.dataset.raw, kw);
+      if (nickEl) nickEl.innerHTML = highlight(nickEl.dataset.raw, kw);
+
+      let hit = true;
+      if (filterMode === 'mine') hit = row.classList.contains('is-me');
+      if (hit && kw) {
+        const hay = ((textEl && textEl.dataset.raw) || '') + ' ' +
+                    ((nickEl && nickEl.dataset.raw) || '');
+        hit = hay.toLowerCase().indexOf(kw.toLowerCase()) !== -1;
+      }
+
+      row.hidden = !hit;
+      if (hit) shown += 1;
+    });
+
+    if (filtering) {
+      let label;
+      if (filterMode === 'mine') {
+        label = kw ? '我的消息中匹配 ' + shown + ' 条' : '我的消息 ' + shown + ' 条';
+      } else {
+        label = '找到 ' + shown + ' 条';
+      }
+      if (kw && hasMore) label += '（仅已加载的消息）';
+      countEl.textContent = label;
+      countEl.hidden = false;
+    } else {
+      countEl.hidden = true;
+    }
+
+    if (noMatchEl) noMatchEl.hidden = !(filtering && shown === 0);
+    if (searchMoreBtn) {
+      searchMoreBtn.hidden = !(kw && hasMore);
+      searchedAll = !hasMore;
+    }
+    if (searchClear) searchClear.hidden = !searchInput.value;
+  }
+
+  /* ---------- V5 搜索交互 ---------- */
+  if (searchInput) {
+    searchInput.addEventListener('input', applyFilter);
+
+    searchInput.addEventListener('keydown', function (e) {
+      if (e.key === 'Escape' && searchInput.value) {
+        e.stopPropagation();          /* 先清空，别直接关掉弹窗 */
+        searchInput.value = '';
+        applyFilter();
+      }
+    });
+  }
+
+  if (searchClear) {
+    searchClear.addEventListener('click', function () {
+      searchInput.value = '';
+      applyFilter();
+      searchInput.focus();
+    });
+  }
+
+  filterBtns.forEach(function (btn) {
+    btn.addEventListener('click', function () {
+      filterMode = btn.getAttribute('data-filter') || 'all';
+      filterBtns.forEach(function (b) {
+        b.classList.toggle('is-active', b === btn);
+      });
+      applyFilter();
+    });
+  });
+
+  /* 只加载了最近一页时，搜索结果可能不全 —— 给个按钮把历史都拉进来再筛 */
+  if (searchMoreBtn) {
+    searchMoreBtn.addEventListener('click', async function () {
+      if (loadingAll) return;
+      loadingAll = true;
+      searchMoreBtn.disabled = true;
+      searchMoreBtn.textContent = '加载中…';
+      try {
+        let guard = 0;
+        while (hasMore && guard++ < 40) {
+          await loadOlder();
+        }
+      } catch (e) {
+        console.error('[community]', e);
+      } finally {
+        loadingAll = false;
+        searchMoreBtn.disabled = false;
+        searchMoreBtn.textContent = '把更早的消息也加载来搜';
+        applyFilter();
+      }
+    });
   }
 
   function isNearBottom() {
@@ -2892,6 +3450,118 @@ window.SUPABASE_CONFIG = {
   currentUser = loadUser();
   updateUI();
 })();
+</script>
+<script>/* ./assets/js/announcement.js */
+/* ==========================================================
+ * 公告栏（V5）
+ *
+ * - 页脚「公告」按钮随时可进
+ * - 打开网页后按 data.js 里 announcement.autoShow 自动弹出
+ *   内容全部来自 PROFILE_DATA.announcement，改数据即可改公告
+ * ========================================================== */
+(function () {
+  const data = window.PROFILE_DATA || {};
+  const ann = data.announcement;
+  const modal = document.getElementById('announcementModal');
+  const openBtn = document.querySelector('[data-open-announcement]');
+  if (!modal || !ann) return;
+
+  const bodyEl = modal.querySelector('#announcementBody');
+  const dateEl = modal.querySelector('#announcementDate');
+  const badgeEl = modal.querySelector('#announcementBadge');
+  const introEl = modal.querySelector('#announcementIntro');
+
+  function escapeHtml(str) {
+    const div = document.createElement('div');
+    div.textContent = String(str || '');
+    return div.innerHTML;
+  }
+
+  /* ---------- 渲染 ---------- */
+  function render() {
+    if (dateEl) dateEl.textContent = ann.date ? '更新于 ' + ann.date : '';
+
+    if (badgeEl) {
+      badgeEl.textContent = ann.badge || '';
+      badgeEl.hidden = !ann.badge;
+    }
+
+    if (introEl) {
+      introEl.textContent = ann.intro || '';
+      introEl.hidden = !ann.intro;
+    }
+
+    bodyEl.innerHTML = (ann.sections || []).map(function (section) {
+      const items = (section.items || []).map(function (text) {
+        return '<li>' + escapeHtml(text) + '</li>';
+      }).join('');
+
+      return '<section class="ann__section">' +
+               '<h3 class="ann__section-title">' + escapeHtml(section.title) + '</h3>' +
+               '<ul class="ann__list">' + items + '</ul>' +
+             '</section>';
+    }).join('');
+  }
+
+  /* ---------- 打开 / 关闭 ---------- */
+  function openModal() {
+    render();
+    modal.hidden = false;
+    document.body.style.overflow = 'hidden';
+  }
+
+  function closeModal() {
+    modal.hidden = true;
+    document.body.style.overflow = '';
+  }
+
+  if (openBtn) openBtn.addEventListener('click', openModal);
+
+  modal.querySelectorAll('[data-close-announcement]').forEach(function (el) {
+    el.addEventListener('click', closeModal);
+  });
+
+  /* ---------- 自动弹出 ---------- */
+  const AUTO_KEY = 'announcement_auto';
+
+  function shouldAutoShow() {
+    const mode = ann.autoShow || 'session';
+    if (mode === 'off') return false;
+    if (mode === 'always') return true;
+
+    if (mode === 'daily') {
+      let today = '';
+      try { today = new Date().toISOString().slice(0, 10); } catch (e) {}
+      try {
+        if (localStorage.getItem(AUTO_KEY) === today) return false;
+        localStorage.setItem(AUTO_KEY, today);
+      } catch (e) {}
+      return true;
+    }
+
+    /* 默认 session：一个浏览器会话只弹一次 */
+    try {
+      if (sessionStorage.getItem(AUTO_KEY) === '1') return false;
+      sessionStorage.setItem(AUTO_KEY, '1');
+    } catch (e) {}
+    return true;
+  }
+
+  if (!shouldAutoShow()) return;
+
+  /* 等开场消息先滚出来，别一上来就盖住 */
+  setTimeout(function () {
+    /* 用户已经自己打开了别的弹窗，就不打扰 */
+    const busy = ['communityModal', 'feedbackModal', 'changelogModal', 'registerModal']
+      .some(function (id) {
+        const m = document.getElementById(id);
+        return m && !m.hidden;
+      });
+    if (busy || !modal.hidden) return;
+    openModal();
+  }, 1400);
+})();
+
 </script>
 <script>/* ./assets/js/ai.js */
 // assets/js/ai.js
@@ -3553,7 +4223,10 @@ async function callLLM(userMessage, onChunk, onDone, onError, _isRetry) {
   }
 
   /* ---------- V3 键盘操作：Esc 关闭任意弹窗 + Tab 焦点循环 ---------- */
-  const MODALS = ['communityModal', 'feedbackModal', 'changelogModal', 'communityRegisterModal'];
+  /* 顺序 = 叠放顺序，最后一个是「最上层」，Esc 优先关它。
+     V5：补上公告栏；注册弹窗的真实 id 是 registerModal（原来写的
+     communityRegisterModal 根本取不到元素，导致注册弹窗按 Esc 关不掉） */
+  const MODALS = ['communityModal', 'feedbackModal', 'changelogModal', 'announcementModal', 'registerModal'];
 
   function visibleModals() {
     return MODALS.map(function (id) { return document.getElementById(id); })

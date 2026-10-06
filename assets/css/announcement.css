@@ -1,0 +1,100 @@
+/* ==========================================================
+ * 公告栏（V5）
+ * 依赖 index.html 里的主题变量（--c-*）
+ * ========================================================== */
+
+/* ---------- 头部：置顶标签 + 更新日期 ---------- */
+.ann__head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: -14px 0 14px;
+}
+
+.ann__badge {
+  flex-shrink: 0;
+  padding: 1px 8px;
+  border-radius: 999px;
+  background: var(--c-invert-bg);
+  color: var(--c-invert-fg);
+  font-size: .66rem;
+  font-weight: 700;
+  letter-spacing: .06em;
+  line-height: 1.7;
+}
+
+.ann__badge[hidden] { display: none; }
+
+.ann__date {
+  font-size: .74rem;
+  color: var(--c-text-3);
+}
+
+/* ---------- 开场一句话 ---------- */
+.ann__intro {
+  font-size: .86rem;
+  color: var(--c-text-3);
+  padding-bottom: 16px;
+  margin-bottom: 20px;
+  border-bottom: 1px solid var(--c-border-2);
+}
+
+.ann__intro[hidden] { display: none; }
+
+/* ---------- 每个板块 ---------- */
+.ann__section { margin-bottom: 22px; }
+.ann__section:last-child { margin-bottom: 0; }
+
+.ann__section-title {
+  position: relative;
+  font-size: .92rem;
+  font-weight: 700;
+  color: var(--c-text);
+  padding-left: 12px;
+  margin-bottom: 10px;
+}
+
+/* 标题左侧的竖条：一眼分出板块 */
+.ann__section-title::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: .32em;
+  width: 3px;
+  height: .95em;
+  border-radius: 2px;
+  background: var(--c-text);
+  opacity: .5;
+}
+
+.ann__list {
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.ann__list li {
+  position: relative;
+  padding-left: 18px;
+  font-size: .87rem;
+  line-height: 1.65;
+  color: var(--c-text-2);
+}
+
+.ann__list li::before {
+  content: '';
+  position: absolute;
+  left: 3px;
+  top: .62em;
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: var(--c-text-3);
+}
+
+/* ---------- 移动端 ---------- */
+@media (max-width: 600px) {
+  .ann__section { margin-bottom: 20px; }
+  .ann__list li { font-size: .84rem; }
+}

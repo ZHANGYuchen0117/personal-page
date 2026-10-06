@@ -3,10 +3,10 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-<title>我的个人主页 · V4 · 微信消息风</title>
+<title>我的个人主页 · V5 · 微信消息风</title>
 
 <!-- V4 分享与收录：标题/描述/分享卡片/图标/站点地址 -->
-<meta name="description" content="张聿辰的个人主页：聊天式界面，可以直接问我问题，也可以到社区留言。">
+<meta name="description" content="张聿辰的个人主页：聊天式界面，可以直接问我问题，也可以看公告、到社区留言。">
 <meta name="author" content="张聿辰">
 <meta name="color-scheme" content="light dark">
 <link rel="canonical" href="https://zhangyuchen0117.github.io/personal-page/">
@@ -51,6 +51,7 @@
 <link rel="stylesheet" href="./assets/css/chat.css">
 <link rel="stylesheet" href="./assets/css/feedback.css">
 <link rel="stylesheet" href="./assets/css/community.css">
+<link rel="stylesheet" href="./assets/css/announcement.css">
 
 <style>
   /* ==========================================================
@@ -344,7 +345,9 @@
   }
   @media (max-width: 400px) {
     .page { padding: 20px 0 0 12px; }
-    .page-foot { padding: 10px 12px 14px 0; }
+    /* V5：页脚多了「公告」，窄屏收紧横向留白与间距，保证一行放得下 */
+    .page-foot { padding: 10px 12px 14px 0; gap: 2px; }
+    .btn-changelog { padding: 13px 10px; letter-spacing: .06em; }
     .modal__panel { padding: 22px 18px 24px; }
   }
 
@@ -396,6 +399,7 @@
 
   <!-- 页脚 -->
   <footer class="page-foot">
+    <button type="button" class="btn-changelog" data-open-announcement>公告</button>
     <button type="button" class="btn-changelog" data-open-community>社区</button>
     <button type="button" class="btn-changelog" data-open-feedback>反馈</button>
     <button type="button" class="btn-changelog" data-open-changelog>修改日志</button>
@@ -479,6 +483,30 @@
   </div>
 </div>
 
+<!-- ===== 公告栏弹窗（V5） ===== -->
+<div class="modal" id="announcementModal" hidden>
+  <div class="modal__mask" data-close-announcement></div>
+  <div class="modal__panel" role="dialog" aria-modal="true" aria-labelledby="announcementTitle">
+    <button type="button" class="modal__close" data-close-announcement aria-label="关闭">
+      <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor"
+           stroke-width="2.4" stroke-linecap="round">
+        <path d="M6 6l12 12M18 6L6 18"/>
+      </svg>
+    </button>
+    <h2 class="modal__title" id="announcementTitle">公告</h2>
+    <p class="modal__sub">近况一览</p>
+
+    <div class="ann__head">
+      <span class="ann__badge" id="announcementBadge" hidden></span>
+      <span class="ann__date" id="announcementDate"></span>
+    </div>
+
+    <p class="ann__intro" id="announcementIntro"></p>
+
+    <div id="announcementBody"></div>
+  </div>
+</div>
+
 <!-- ===== 社区弹窗 ===== -->
 <div class="modal" id="communityModal" hidden>
   <div class="modal__mask" data-close-community></div>
@@ -491,6 +519,34 @@
     </button>
     <h2 class="modal__title" id="communityTitle">社区</h2>
     <p class="modal__sub">路过留句话</p>
+
+    <!-- V5 搜索与筛选 -->
+    <div class="community__tools" id="communityTools">
+      <div class="community__search">
+        <svg class="community__search-icon" viewBox="0 0 24 24" width="14" height="14" fill="none"
+             stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true">
+          <circle cx="11" cy="11" r="7"/>
+          <path d="M16.5 16.5L21 21"/>
+        </svg>
+        <input type="text" class="community__search-input" id="communitySearch"
+               placeholder="搜索消息或昵称…" maxlength="60" autocomplete="off"
+               aria-label="搜索社区消息">
+        <button type="button" class="community__search-clear" id="communitySearchClear"
+                aria-label="清空搜索" hidden>
+          <svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor"
+               stroke-width="2.4" stroke-linecap="round">
+            <path d="M6 6l12 12M18 6L6 18"/>
+          </svg>
+        </button>
+      </div>
+
+      <div class="community__filters" role="group" aria-label="消息筛选">
+        <button type="button" class="community__filter is-active" data-filter="all">全部</button>
+        <button type="button" class="community__filter" data-filter="mine" id="communityFilterMine">我的</button>
+      </div>
+    </div>
+
+    <p class="community__count" id="communityCount" hidden></p>
 
     <div class="community__list" id="communityList">
       <div class="community__empty">还没有消息，说点什么吧</div>
@@ -565,6 +621,7 @@
 <script src="./assets/js/supabase-config.js"></script>
 <script src="./assets/js/feedback.js"></script>
 <script src="./assets/js/community.js"></script>
+<script src="./assets/js/announcement.js"></script>
 <script src="./assets/js/ai.js"></script>
 <script src="./assets/js/chat.js"></script>
 <script src="./assets/js/app.js"></script>

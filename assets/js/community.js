@@ -19,6 +19,13 @@
   const meNameEl = modal.querySelector('#communityMeName');
   const logoutBtn = modal.querySelector('#communityLogout');
 
+  // V5 搜索与筛选
+  const searchInput = modal.querySelector('#communitySearch');
+  const searchClear = modal.querySelector('#communitySearchClear');
+  const countEl = modal.querySelector('#communityCount');
+  const filterBtns = Array.prototype.slice.call(modal.querySelectorAll('.community__filter'));
+  const mineFilterBtn = modal.querySelector('#communityFilterMine');
+
   // 注册表单
   const regForm = regModal.querySelector('#registerForm');
   const regAvatarInput = regModal.querySelector('#regAvatar');
@@ -52,6 +59,11 @@
   let pollTimer = null;
   let isOpen = false;
 
+  // V5 搜索与筛选状态
+  let filterMode = 'all';        // 'all' | 'mine'
+  let loadingAll = false;        // 正在把更早的消息全部加载进来
+  let searchedAll = false;       // 是否已经加载到最早一条
+
   /* ---------- 分页按钮：列表顶部 ---------- */
   const moreBtn = document.createElement('button');
   moreBtn.type = 'button';
@@ -60,6 +72,20 @@
   moreBtn.textContent = '加载更早的消息';
   listEl.insertBefore(moreBtn, listEl.firstChild);
   moreBtn.addEventListener('click', function () { loadOlder(); });
+
+  /* ---------- V5 搜索：无结果提示 + 「把更早的消息也加载来搜」 ---------- */
+  const noMatchEl = document.createElement('div');
+  noMatchEl.className = 'community__nomatch';
+  noMatchEl.textContent = '没有匹配的消息';
+  noMatchEl.hidden = true;
+  listEl.appendChild(noMatchEl);
+
+  const searchMoreBtn = document.createElement('button');
+  searchMoreBtn.type = 'button';
+  searchMoreBtn.className = 'community__search-more';
+  searchMoreBtn.hidden = true;
+  searchMoreBtn.textContent = '把更早的消息也加载来搜';
+  if (countEl) countEl.insertAdjacentElement('afterend', searchMoreBtn);
 
   function updateMoreBtn() {
     moreBtn.disabled = false;
@@ -194,7 +220,17 @@
     } else {
       guestEl.hidden = false;
       composeEl.hidden = true;
+      /* 没登录就没有「我的消息」可看，自动退回「全部」 */
+      if (filterMode === 'mine') {
+        filterMode = 'all';
+        filterBtns.forEach(function (b) {
+          b.classList.toggle('is-active', b.getAttribute('data-filter') === 'all');
+        });
+      }
     }
+
+    if (mineFilterBtn) mineFilterBtn.hidden = !currentUser;
+    applyFilter();
   }
 
   /* ---------- 通用 ---------- */
@@ -232,6 +268,12 @@
         '<div class="community__text">' + escapeHtml(msg.content) + '</div>' +
       '</div>';
 
+    /* V5 搜索：另外存一份原文。高亮要反复重画这块内容，
+       不能直接读 innerHTML —— 里面可能已经有 <mark> 了 */
+    row.querySelector('.community__nick').dataset.raw = msg.nickname || '访客';
+    row.querySelector('.community__text').dataset.raw =
+      msg.content == null ? '' : String(msg.content);
+
     // 头像加载失败（比如早期内嵌图或链接失效）就回退默认头像
     const img = row.querySelector('.community__msg-avatar');
     img.addEventListener('error', function () {
@@ -241,7 +283,139 @@
     if (prepend) listEl.insertBefore(row, moreBtn.nextSibling);
     else listEl.appendChild(row);
 
+    applyFilter();   /* V5：新到的消息也要按当前搜索 / 筛选条件处理 */
     return row;
+  }
+
+  /* ---------- V5 搜索与筛选 ---------- */
+  function allRows() {
+    return Array.prototype.slice.call(listEl.querySelectorAll('.community__msg'));
+  }
+
+  /* 把命中的关键词包成 <mark>；raw 一律先转义，避免注入 */
+  function highlight(raw, kw) {
+    const text = String(raw == null ? '' : raw);
+    if (!kw) return escapeHtml(text);
+    const lowText = text.toLowerCase();
+    const lowKw = kw.toLowerCase();
+    if (!lowKw) return escapeHtml(text);
+
+    let out = '';
+    let from = 0;
+    let guard = 0;
+    while (guard++ < 300) {
+      const at = lowText.indexOf(lowKw, from);
+      if (at === -1) {
+        out += escapeHtml(text.slice(from));
+        break;
+      }
+      out += escapeHtml(text.slice(from, at)) +
+             '<mark>' + escapeHtml(text.slice(at, at + lowKw.length)) + '</mark>';
+      from = at + lowKw.length;
+    }
+    return out;
+  }
+
+  function applyFilter() {
+    if (!searchInput || !countEl) return;
+
+    const kw = searchInput.value.trim();
+    const filtering = !!kw || filterMode === 'mine';
+    let shown = 0;
+
+    allRows().forEach(function (row) {
+      const textEl = row.querySelector('.community__text');
+      const nickEl = row.querySelector('.community__nick');
+
+      if (textEl) textEl.innerHTML = highlight(textEl.dataset.raw, kw);
+      if (nickEl) nickEl.innerHTML = highlight(nickEl.dataset.raw, kw);
+
+      let hit = true;
+      if (filterMode === 'mine') hit = row.classList.contains('is-me');
+      if (hit && kw) {
+        const hay = ((textEl && textEl.dataset.raw) || '') + ' ' +
+                    ((nickEl && nickEl.dataset.raw) || '');
+        hit = hay.toLowerCase().indexOf(kw.toLowerCase()) !== -1;
+      }
+
+      row.hidden = !hit;
+      if (hit) shown += 1;
+    });
+
+    if (filtering) {
+      let label;
+      if (filterMode === 'mine') {
+        label = kw ? '我的消息中匹配 ' + shown + ' 条' : '我的消息 ' + shown + ' 条';
+      } else {
+        label = '找到 ' + shown + ' 条';
+      }
+      if (kw && hasMore) label += '（仅已加载的消息）';
+      countEl.textContent = label;
+      countEl.hidden = false;
+    } else {
+      countEl.hidden = true;
+    }
+
+    if (noMatchEl) noMatchEl.hidden = !(filtering && shown === 0);
+    if (searchMoreBtn) {
+      searchMoreBtn.hidden = !(kw && hasMore);
+      searchedAll = !hasMore;
+    }
+    if (searchClear) searchClear.hidden = !searchInput.value;
+  }
+
+  /* ---------- V5 搜索交互 ---------- */
+  if (searchInput) {
+    searchInput.addEventListener('input', applyFilter);
+
+    searchInput.addEventListener('keydown', function (e) {
+      if (e.key === 'Escape' && searchInput.value) {
+        e.stopPropagation();          /* 先清空，别直接关掉弹窗 */
+        searchInput.value = '';
+        applyFilter();
+      }
+    });
+  }
+
+  if (searchClear) {
+    searchClear.addEventListener('click', function () {
+      searchInput.value = '';
+      applyFilter();
+      searchInput.focus();
+    });
+  }
+
+  filterBtns.forEach(function (btn) {
+    btn.addEventListener('click', function () {
+      filterMode = btn.getAttribute('data-filter') || 'all';
+      filterBtns.forEach(function (b) {
+        b.classList.toggle('is-active', b === btn);
+      });
+      applyFilter();
+    });
+  });
+
+  /* 只加载了最近一页时，搜索结果可能不全 —— 给个按钮把历史都拉进来再筛 */
+  if (searchMoreBtn) {
+    searchMoreBtn.addEventListener('click', async function () {
+      if (loadingAll) return;
+      loadingAll = true;
+      searchMoreBtn.disabled = true;
+      searchMoreBtn.textContent = '加载中…';
+      try {
+        let guard = 0;
+        while (hasMore && guard++ < 40) {
+          await loadOlder();
+        }
+      } catch (e) {
+        console.error('[community]', e);
+      } finally {
+        loadingAll = false;
+        searchMoreBtn.disabled = false;
+        searchMoreBtn.textContent = '把更早的消息也加载来搜';
+        applyFilter();
+      }
+    });
   }
 
   function isNearBottom() {
