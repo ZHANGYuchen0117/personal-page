@@ -2486,16 +2486,22 @@ window.SUPABASE_CONFIG = {
   }
 
   async function post(question, source) {
-    const res = await fetch(BASE + '/rest/v1/' + TABLE + '?on_conflict=question_key', {
+    /* 走 RPC 而不是直接 INSERT 表。
+       原因：PostgREST 处理 INSERT 时会带 RETURNING，而 PostgreSQL 见到 RETURNING
+       就会拿 SELECT 策略去检查刚插入的那一行；我们的 SELECT 策略只允许读「已答」的行，
+       于是刚写进去的「待答」行读不回来，会直接报
+         42501 new row violates row-level security policy
+       改用 security definer 的 report_gap() 后，插入以表主身份进行、函数返回 void，
+       从结构上绕开这个陷阱（详见 supabase/v6-qa.sql 第 2 节注释）。 */
+    const res = await fetch(BASE + '/rest/v1/rpc/report_gap', {
       method: 'POST',
       headers: {
         apikey: KEY,
         Authorization: 'Bearer ' + KEY,
-        'Content-Type': 'application/json',
-        /* 同一个问题只留一条：重复时直接忽略，不报错 */
-        Prefer: 'resolution=ignore-duplicates,return=minimal'
+        'Content-Type': 'application/json'
+        /* 去重在函数内部用 unique_violation 处理，这里不需要 on_conflict */
       },
-      body: JSON.stringify({ question: question, status: 'pending', source: source || 'chat' })
+      body: JSON.stringify({ q: question, src: source || 'chat' })
     });
     if (!res.ok) throw new Error('HTTP ' + res.status);
   }

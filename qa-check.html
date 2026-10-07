@@ -44,12 +44,14 @@
   </div>
 
   <div class="card">
-    <h2><span class="num">2</span>匿名写入测试（访客上报走的就是这条路）</h2>
-    <button id="btn2">点这里，写一条测试问题</button>
+    <h2><span class="num">2</span>匿名上报测试（访客上报走的就是这条路）</h2>
+    <button id="btn2">点这里，上报一条测试问题</button>
     <pre id="out2">—</pre>
     <p class="hint">
-      会往 <code>qa_gaps</code> 表插一条「【自检】…」。<br />
-      报错 <code>42P01 / relation does not exist</code> = SQL 还没执行；<code>42501 / row-level security</code> = 权限脚本没生效。<br />
+      会通过 <code>report_gap()</code> 往 <code>qa_gaps</code> 表写一条「【自检】…」。<br />
+      <code>PGRST202 / Could not find the function report_gap</code> = 数据库里还没有这个函数，
+      需要重跑 <code>supabase/v6-qa.sql</code>（跑完可能要等十几秒 schema 缓存刷新）。<br />
+      <code>42P01</code> = 表还没建；<code>permission denied</code> = 权限脚本没生效。<br />
       测完可以删掉：<code>delete from public.qa_gaps where question like '【自检】%';</code>
     </p>
   </div>
@@ -121,26 +123,25 @@
       'anonKey 前 12 : ' + esc(KEY.slice(0, 12)) + '…（共 ' + KEY.length + ' 字符）');
   })();
 
-  /* 2. 匿名写入 */
+  /* 2. 匿名上报（访客上报走的就是这条路：RPC report_gap） */
   el('btn2').addEventListener('click', async function () {
     if (!BASE || !KEY) { show('out2', line('bad', '✗ 没有后端配置，无法测试')); return; }
     show('out2', '请求中…');
-    var url = BASE + '/rest/v1/qa_gaps?on_conflict=question_key';
+    var url = BASE + '/rest/v1/rpc/report_gap';
     try {
       var res = await fetch(url, {
         method: 'POST',
         headers: {
           apikey: KEY,
           Authorization: 'Bearer ' + KEY,
-          'Content-Type': 'application/json',
-          Prefer: 'resolution=ignore-duplicates,return=minimal'
+          'Content-Type': 'application/json'
         },
-        body: JSON.stringify({ question: TEST_Q, status: 'pending', source: 'no_answer' })
+        body: JSON.stringify({ q: TEST_Q, src: 'no_answer' })
       });
       var text = await res.text();
       var head = res.ok
-        ? line('ok', '✓ HTTP ' + res.status + ' —— 写入成功（表存在、权限正常）')
-        : line('bad', '✗ HTTP ' + res.status + ' —— 写入失败');
+        ? line('ok', '✓ HTTP ' + res.status + ' —— 上报成功（访客链路通了）')
+        : line('bad', '✗ HTTP ' + res.status + ' —— 上报失败');
       show('out2', head + '\n返回体: ' + (text ? esc(text) : '(空，正常)') +
         '\n\n请求: ' + esc(url));
     } catch (e) {

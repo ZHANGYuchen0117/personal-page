@@ -72,17 +72,23 @@ create index if not exists qa_gaps_status_idx
 
 
 -- ============================================================
--- 2) 策略：anon 只能「新增待答」和「读已答」
---    —— 故意不写 update / delete 策略，RLS 默认拒绝
+-- 2) 策略：anon 只能「读已答」
+--    —— 故意不写 update / delete / insert 策略，RLS 默认拒绝
+--
+--    ⚠️ 为什么访客写入不用 INSERT 策略、而走下面的 report_gap 函数？
+--    PostgREST 处理 INSERT 时内部会带 RETURNING（形如
+--      with pgrst_source as (insert ... returning *) select * from pgrst_source
+--    ），而 PostgreSQL 一旦看到 RETURNING，就会拿 **SELECT 策略** 去检查
+--    刚插入的那一行。我们的 SELECT 策略只允许读「已答」的行，于是刚写进去的
+--    「待答」行读不回来，直接报：
+--      42501 new row violates row-level security policy for table "qa_gaps"
+--    注意：裸 INSERT（不带 RETURNING）是完全正常的，所以这个坑很隐蔽 ——
+--    必须按 PostgREST 的实际写法测（tools/test-sql.mjs 里有这条回归用例）。
+--    把写入挪进 security definer 函数后，插入以表主身份进行、RLS 不生效，
+--    函数返回 void 也不会把行读回来，从结构上绕开了这个问题。
 -- ============================================================
+-- 老版本留下的直写策略，如果你之前跑过旧脚本，这里把它清掉
 drop policy if exists "qa_gaps anon insert" on public.qa_gaps;
-create policy "qa_gaps anon insert"
-  on public.qa_gaps for insert to anon, authenticated
-  with check (
-    char_length(btrim(question)) between 2 and 300
-    and status = 'pending'
-    and answer is null
-  );
 
 drop policy if exists "qa_gaps anon read answered" on public.qa_gaps;
 create policy "qa_gaps anon read answered"
@@ -90,7 +96,9 @@ create policy "qa_gaps anon read answered"
   using (status = 'answered' and answer is not null);
 
 revoke update, delete, truncate on public.qa_gaps from anon, authenticated;
-grant insert, select on public.qa_gaps to anon, authenticated;
+-- 访客不再需要直写权限：写入统一走 report_gap()（见 4.0）
+revoke insert on public.qa_gaps from anon, authenticated;
+grant select on public.qa_gaps to anon, authenticated;
 
 
 -- ============================================================
@@ -107,8 +115,38 @@ revoke all on public.owner_secret from anon, authenticated;
 
 
 -- ============================================================
--- 4) 函数：口令校验 + 读待答 + 写答案
+-- 4) 函数：访客上报 + 口令校验 + 读待答 + 写答案
 -- ============================================================
+
+-- 4.0 访客上报一个问题（前端唯一能用的写入口）
+--     security definer：以表主身份插入，不经过 RLS，也就绕开了上面说的
+--     RETURNING 陷阱；返回 void，所以不会把行读回来。
+--     客户端只能传「问题 + 来源」，status / answer 由函数写死，改不了。
+create or replace function public.report_gap(q text, src text default 'ai_unknown')
+returns void
+language plpgsql
+security definer
+set search_path = public
+as $$
+declare
+  v_q   text;
+  v_src text;
+begin
+  v_q := btrim(coalesce(q, ''));
+  if char_length(v_q) < 2 or char_length(v_q) > 300 then
+    raise exception '问题长度需要在 2 - 300 字之间';
+  end if;
+
+  v_src := case when src in ('ai_unknown', 'no_answer') then src else 'ai_unknown' end;
+
+  begin
+    insert into public.qa_gaps (question, status, source)
+    values (v_q, 'pending', v_src);
+  exception
+    when unique_violation then
+      null;  -- 同一个问题已经报过了，忽略即可（不报错给访客看）
+  end;
+end $$;
 
 -- 4.1 口令校验（不给 anon 执行权限，只作为下面两个函数的内部工具）
 create or replace function public.qpass_ok(pass text)
@@ -184,6 +222,7 @@ begin
 end $$;
 
 
+grant execute on function public.report_gap(text, text)      to anon, authenticated;
 grant execute on function public.list_gaps(text, int)   to anon, authenticated;
 grant execute on function public.answer_gap(uuid, text, text) to anon, authenticated;
 
@@ -200,11 +239,24 @@ select c.relname as "表名", c.relrowsecurity as "已开启RLS"
 
 select tablename as "表名", policyname as "策略名", cmd as "操作"
   from pg_policies
- where schemaname = 'public'
+  where schemaname = 'public'
    and tablename = 'qa_gaps'
  order by 3;
 
--- 应该看到：qa_gaps 2 条策略（INSERT / SELECT），owner_secret 0 条策略
+-- 应该看到：qa_gaps 只有 1 条策略（SELECT），owner_secret 0 条策略。
+-- 写入不再依赖策略，而是走 report_gap() 函数 —— 这是正常的，不是漏了。
+
+-- 顺手确认「访客上报」这条路通了：见仓库里 tools/test-sql.mjs（用真 Postgres 实测），
+-- 或在 SQL Editor 里**单独**粘贴执行下面这几句：
+--
+--   set role anon;
+--   select public.report_gap('【自检】临时测试', 'no_answer');
+--   reset role;
+--   delete from public.qa_gaps where question = '【自检】临时测试';
+--
+-- ⚠️ 千万不要把 begin / rollback 写进这个脚本里：
+-- PostgreSQL 的简单查询协议会把**整批语句当成一个隐式事务**，
+-- 末尾一个 rollback 会把前面建的整张表一起撤销（而且不报错，非常难查）。
 
 
 -- ============================================================
