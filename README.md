@@ -111,7 +111,27 @@ python3 tools/build-standalone.py            # 输出 dist/personal-page.html
 - **安全基线（推荐先跑这一个，幂等，包含下面两个）**：`supabase/v4-security.sql`
 - 建桶与实时推送：`supabase/v2.2-storage-realtime.sql`
 - 访问统计建表：`supabase/v4-visits.sql`
+- AI 孪生闭环：`supabase/v6-qa.sql`（见上面的「AI 孪生」一节）
 - 页面在表还没建好时会静默跳过，不影响打开
+
+### 改了 SQL 之后一定要自测
+
+`supabase/*.sql` 是权限代码，改错一个字就可能把访客写入堵死（页面表现是**静默失败**，
+很难发现），或者反过来把不该公开的数据泄露出去。所以仓库里带了一个自动化测试：
+用真 Postgres（PGlite，跑在 Node 里的 WASM 版）把整段脚本跑一遍，并以 `anon` 身份实测。
+
+```bash
+cd tools
+npm install @electric-sql/pglite     # 只需一次
+node test-sql.mjs
+```
+
+期望输出 `25 通过 / 0 失败`。它会验证：匿名能写入待答问题、匿名不能改删、
+匿名读不到待答和口令表、口令对错的行为、答完能被访客读到、脚本幂等。
+
+> 排查「后台看不到待答问题」时，先打开 `qa-check.html`（线上同路径）跑一遍，
+> 它会分别测「配置 / 匿名写入 / 匿名读取 / 口令拉取 / 本机记录」五步，
+> 每步都显示 HTTP 状态和返回体。
 
 ### 关于 anon key 被提交到仓库
 

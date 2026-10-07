@@ -2,3 +2,5 @@
 .vscode/
 .idea/
 *.log
+node_modules/
+tools/package-lock.json

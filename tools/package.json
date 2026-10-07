@@ -1,0 +1,11 @@
+{
+  "name": "personal-page-tools",
+  "private": true,
+  "description": "仓库里的辅助脚本（目前是 supabase/*.sql 的自动化测试）",
+  "scripts": {
+    "test-sql": "node test-sql.mjs"
+  },
+  "dependencies": {
+    "@electric-sql/pglite": "^0.5.8"
+  }
+}

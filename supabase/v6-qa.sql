@@ -125,7 +125,9 @@ as $$
   );
 $$;
 
-revoke all on function public.qpass_ok(text) from anon, authenticated;
+-- 注意：PostgreSQL 默认把 EXECUTE 授给 PUBLIC，所以必须连 public 一起收回，
+-- 只写 from anon 是收不掉的（实测验证过）。
+revoke all on function public.qpass_ok(text) from public, anon, authenticated;
 
 
 -- 4.2 列出待我回答的问题
