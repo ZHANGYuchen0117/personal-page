@@ -167,6 +167,39 @@
     return row;
   }
 
+  /* ---------- V6：个人档案的离线兜底关键词 ----------
+     每行资料的「label → 可能被问到的词」。放在最前面，
+     因为这些是最具体的事实（生日 / 爱好 / 大学目标）。
+     关键词刻意收窄，避免把「专业」「技能」这类问题也吞掉。 */
+  const PROFILE_KEYS = {
+    '出生日期': ['生日', '出生', '多大', '几岁', '年龄'],
+    '爱好': ['爱好', '兴趣', '喜欢干', '喜欢做'],
+    '以后想一起学的': ['一起学', '想学的', '冲浪', '滑雪', '拳击'],
+    '平时喜欢': ['美食', '游戏', '和平精英'],
+    '大学阶段的目标': ['保研', '科研', '大学阶段']
+  };
+
+  /* ---------- V6：孪生「没学过」的处理 ---------- */
+  const UNKNOWN_REPLY = '这个问题我还没被教过。已经帮你记下来去问本人了，他补上之后我就能回答。';
+
+  /* 「没学过」的暗号可能在流式过程中一个字一个字地到（__UNKNOWN__），
+     只要目前收到的还长得像它的前缀，就先不显示给访客看。 */
+  function looksLikeMarkerPrefix(text) {
+    const t = String(text || '').trim();
+    if (!t || t.length > 14) return false;
+    if (t.charAt(0) === '_') return true;                /* __UNKNOWN__ 开头 */
+    return /^unk/i.test(t) && /^unkn?o?w?n?$/i.test(t);  /* 别名 unknown 只回了一半 */
+  }
+
+  /* 把「答不上来的问题」回报给本人（断网时 QA 模块会先排队） */
+  function reportGap(question, source) {
+    try {
+      if (window.QA && typeof window.QA.reportGap === 'function') {
+        window.QA.reportGap(question, source);
+      }
+    } catch (e) {}
+  }
+
   /* ---------- AI 连不上时的本地兜底 ----------
      数据本来就在页面上（PROFILE_DATA.content），不需要网络。
      按关键词挑最贴近的一段回给访客，答不全但至少不会显示「Load failed」。 */
@@ -179,6 +212,15 @@
         if (q.indexOf(arguments[i]) !== -1) return true;
       }
       return false;
+    }
+
+    /* 先看个人档案：生日 / 爱好 / 想一起学的 / 平时喜欢 / 大学目标 */
+    const profile = content.profile || [];
+    for (let i = 0; i < profile.length; i++) {
+      const keys = PROFILE_KEYS[profile[i].label];
+      if (keys && hit.apply(null, keys)) {
+        return '他的' + profile[i].label + '：' + profile[i].value + '。';
+      }
     }
 
     if (hit('专业', '学什么', '学校', '大一', '学院')) {
@@ -264,18 +306,32 @@
         bubble.classList.add('chat__bubble--ai');
 
         let started = false;
+        let shown = '';
 
         callLLM(
           outgoing,
           function (chunk) {
+            shown += chunk;
             if (!started) {
               bubble.innerHTML = '';
               started = true;
             }
-            bubble.textContent += chunk;
+            /* 「没学过」的暗号正在流式到达时，别把它显示给访客 */
+            if (looksLikeMarkerPrefix(shown)) {
+              bubble.innerHTML = '<span class="chat__thinking"><i></i><i></i><i></i></span>';
+            } else {
+              bubble.textContent = shown;
+            }
             stream.scrollTop = stream.scrollHeight;
           },
           function (fullText) {
+            /* V6：孪生承认「没学过」——不把暗号显示出来，换成友好话术，
+               并把这个问题记下来交给本人补答。本人补完它下次就会了。 */
+            if (window.QA && window.QA.isUnknown(fullText)) {
+              bubble.innerHTML = '<span class="chat__unknown">' + escapeHtml(UNKNOWN_REPLY) + '</span>';
+              reportGap(questionText, 'ai_unknown');
+              return;
+            }
             bubble.innerHTML = linkify(fullText);
             cacheSet(questionText, fullText);   /* 存下来，下次网络不好也能直接用 */
           },
@@ -296,6 +352,8 @@
                      '<br>' + linkify(local);
             } else {
               html = escapeHtml('抱歉，' + errMsg);
+              /* 连本地资料都答不上来，也算一个知识缺口：记下来（断网时先排队） */
+              reportGap(questionText, 'no_answer');
             }
 
             /* 一键重试：网络恢复后不用重新打字 */

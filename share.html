@@ -7,10 +7,10 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-<title>我的个人主页 · V5 · 微信消息风</title>
+<title>我的个人主页 · V6 · 微信消息风</title>
 
 <!-- V4 分享与收录：标题/描述/分享卡片/图标/站点地址 -->
-<meta name="description" content="张聿辰的个人主页：聊天式界面，可以直接问我问题，也可以看公告、到社区留言。">
+<meta name="description" content="张聿辰的个人主页：聊天式界面，可以直接问我的 AI 孪生问题，也可以看公告、到社区留言。">
 <meta name="author" content="张聿辰">
 <meta name="color-scheme" content="light dark">
 <link rel="canonical" href="https://zhangyuchen0117.github.io/personal-page/">
@@ -429,6 +429,14 @@
   margin-bottom: 4px;
   font-size: 12px;
   opacity: 0.75;
+}
+
+/* V6：孪生没学过的问题 —— 如实说明，并告诉访客已经记下来去问本人 */
+.chat__unknown {
+  display: inline-block;
+  font-size: 13px;
+  line-height: 1.65;
+  opacity: 0.85;
 }
 
 /* 兜底/中断时的操作区：一键重试 */
@@ -2055,8 +2063,23 @@
         '智能医学工程专业大一学生',
         '对 Web 开发、AI 应用和产品设计感兴趣'
       ],
-      stage: '个人主页已迭代到 V5，已上线社区消息搜索与筛选、公告栏'
+      stage: '个人主页已迭代到 V6，已上线公告栏、社区搜索，AI 孪生支持持续训练'
     },
+
+    /* 个人小档案：AI 孪生回答「关于我」时的第一手资料。
+       一行一条，label 是别人可能问到的方向，value 是要点（多个用「、」分隔）。 */
+    profile: [
+      { label: '出生日期', value: '2008 年 1 月 17 日' },
+      { label: '爱好', value: '篮球、健身、拼乐高、折纸' },
+      { label: '以后想一起学的', value: '冲浪、滑雪、拳击' },
+      { label: '平时喜欢', value: '吃美食、打游戏（和平精英）' },
+      { label: '大学阶段的目标', value: '拿到保研名额，增强自己的科研能力' }
+    ],
+
+    /* 本人补录的问答（V6）：访客问到孪生答不上来的问题，我在后台填好答案，
+       就会追加到这里 —— 相当于继续训练孪生，下次别人再问就能答上。
+       格式：{ q: '访客的问题', a: '我的回答' } */
+    qa: [],
 
     /* 技能：一项一行，note 补充程度或场景（可省） */
     skills: [
@@ -2071,7 +2094,7 @@
     projects: [
       {
         name: '个人主页',
-        desc: '聊天式页面，已迭代到 V5：AI 问答（回答以页面资料为准）、社区注册与发言（头像存云端）、消息实时推送/分页/搜索与筛选、公告栏、反馈入口、手机端适配、单文件版与内容小后台',
+        desc: '聊天式页面，已迭代到 V6：AI 问答（回答以页面资料为准，答不上来会记下来给我补答）、社区注册与发言（头像存云端）、消息实时推送/分页/搜索与筛选、公告栏、反馈入口、手机端适配、单文件版与内容小后台',
         link: 'https://github.com/ZHANGYuchen0117/personal-page'
       },
       { name: '校园小程序', desc: '需求调研与原型' },
@@ -2081,7 +2104,7 @@
     /* 迭代计划：版本 / 主题 / 具体事项（只写「还没做」的） */
     plan: [
       {
-        version: 'V5',
+        version: 'V6',
         theme: '更好用、更好看',
         items: ['装进桌面：离线可用的 PWA', '多套配色方案', '内容多语言切换']
       }
@@ -2108,9 +2131,9 @@
       {
         title: '项目进展',
         items: [
-          '个人主页已迭代到 V5：社区消息可以搜索和筛选了',
-          '新增公告栏，打开网页就能看到近况',
-          'V4 已完成：AI 问答、社区注册发言、头像云端存储、消息实时推送、手机端适配',
+          '个人主页已迭代到 V6：AI 孪生可以持续训练了',
+          'V5 已完成：社区消息搜索与筛选、公告栏',
+          'V6 新增：孪生答不上来的问题会记下来，我补答后它立刻学会',
           '接下来：装进桌面（PWA）、多套配色方案、内容多语言切换'
         ]
       },
@@ -2150,11 +2173,42 @@
   }
 
   /* ---------- 提示词：全部由上面的数据拼出来 ---------- */
-  const RULE = '不要补充未提到的内容。';
+
+  /* 个人档案压成一行（出生日期 / 爱好 / 想一起学的 / 平时喜欢 / 大学目标） */
+  function profileText() {
+    return CONTENT.profile.map(function (p) {
+      return p.label + '：' + p.value;
+    }).join('；');
+  }
+
+  /* 本人补录的问答 = 永久写在 data.js 里的 + 运行时从云端拉到的。
+     只取最近 30 条，避免提示词太长反而把访客的问题挤没了。 */
+  function qaPairs() {
+    const runtime = (typeof window !== 'undefined' && window.QA_KNOWLEDGE) || [];
+    return (CONTENT.qa || []).concat(runtime)
+      .filter(function (x) { return x && x.q && x.a; })
+      .slice(-30);
+  }
+
+  function qaText() {
+    return qaPairs().map(function (x) {
+      return x.q + '→' + x.a;
+    }).join('；');
+  }
+
+  /* 孪生「答不出来」的暗号：后端 AI 遇到资料里没有的问题时只回这个标记，
+     前端识别后不会把它显示出来，而是换成友好话术并回报给本人。
+     见 assets/js/qa.js 与 assets/js/chat.js。 */
+  const UNKNOWN = '__UNKNOWN__';
+
+  const RULE = '不要补充未提到的内容。' +
+    '如果上面的资料里完全没有答案，你的整条回复必须只有这一串字符：' + UNKNOWN +
+    '，不要写任何解释、也不要自己编。';
 
   function aboutPrompt() {
     const facts = CONTENT.about.facts.concat([CONTENT.about.stage]);
-    return '请只依据以下信息，用2-3句话介绍' + NAME + '：' + facts.join('，') + '。' + RULE;
+    return '请只依据以下信息，用2-3句话介绍' + NAME + '：' + facts.join('，') +
+      '。个人档案：' + profileText() + '。' + RULE;
   }
 
   function skillsPrompt() {
@@ -2201,13 +2255,17 @@
       return stage.version + ' ' + stage.theme + '（' + stage.items.join('、') + '）';
     }).join('；');
 
+    const qa = qaText();
+
     return '请只依据以下信息回答访客的问题，用2-3句话，语气自然。' + RULE + '\n' +
       '姓名：' + NAME + '\n' +
       '关于：' + facts.join('，') + '\n' +
+      '个人档案：' + profileText() + '\n' +
       '技能：' + skills + '\n' +
       '项目：' + projects + '\n' +
       '接下来：' + plan + '\n' +
       '最新公告：' + announcementText() + '\n' +
+      (qa ? '已知问答：' + qa + '\n' : '') +
       '联系方式：页面上的「联系我」里有微信二维码，扫码即可加好友。\n' +
       '访客的问题：' + question;
   }
@@ -2219,8 +2277,11 @@
        如果文件不存在，会自动回退到内置矢量图标 */
     avatar: 'data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAASABIAAD/4QCYRXhpZgAATU0AKgAAAAgABAEaAAUAAAABAAAAPgEbAAUAAAABAAAARgEoAAMAAAABAAIAAIdpAAQAAAABAAAATgAAAAAAAABIAAAAAQAAAEgAAAABAAWQAAAHAAAABDAyMTCRAQAHAAAABAECAwCgAAAHAAAABDAxMDCgAgAEAAAAAQAAAPmgAwAEAAAAAQAAAUAAAAAA/+0AOFBob3Rvc2hvcCAzLjAAOEJJTQQEAAAAAAAAOEJJTQQlAAAAAAAQ1B2M2Y8AsgTpgAmY7PhCfv/iAdhJQ0NfUFJPRklMRQABAQAAAcgAAAAABDAAAG1udHJSR0IgWFlaIAfgAAEAAQAAAAAAAGFjc3AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAD21gABAAAAANMtAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAACWRlc2MAAADwAAAAJHJYWVoAAAEUAAAAFGdYWVoAAAEoAAAAFGJYWVoAAAE8AAAAFHd0cHQAAAFQAAAAFHJUUkMAAAFkAAAAKGdUUkMAAAFkAAAAKGJUUkMAAAFkAAAAKGNwcnQAAAGMAAAAPG1sdWMAAAAAAAAAAQAAAAxlblVTAAAACAAAABwAcwBSAEcAQlhZWiAAAAAAAABvogAAOPUAAAOQWFlaIAAAAAAAAGKZAAC3hQAAGNpYWVogAAAAAAAAJKAAAA+EAAC2z1hZWiAAAAAAAAD21gABAAAAANMtcGFyYQAAAAAABAAAAAJmZgAA8qcAAA1ZAAAT0AAAClsAAAAAAAAAAG1sdWMAAAAAAAAAAQAAAAxlblVTAAAAIAAAABwARwBvAG8AZwBsAGUAIABJAG4AYwAuACAAMgAwADEANv/AABEIAUAA+QMBIgACEQEDEQH/xAAfAAABBQEBAQEBAQAAAAAAAAAAAQIDBAUGBwgJCgv/xAC1EAACAQMDAgQDBQUEBAAAAX0BAgMABBEFEiExQQYTUWEHInEUMoGRoQgjQrHBFVLR8CQzYnKCCQoWFxgZGiUmJygpKjQ1Njc4OTpDREVGR0hJSlNUVVZXWFlaY2RlZmdoaWpzdHV2d3h5eoOEhYaHiImKkpOUlZaXmJmaoqOkpaanqKmqsrO0tba3uLm6wsPExcbHyMnK0tPU1dbX2Nna4eLj5OXm5+jp6vHy8/T19vf4+fr/xAAfAQADAQEBAQEBAQEBAAAAAAAAAQIDBAUGBwgJCgv/xAC1EQACAQIEBAMEBwUEBAABAncAAQIDEQQFITEGEkFRB2FxEyIygQgUQpGhscEJIzNS8BVictEKFiQ04SXxFxgZGiYnKCkqNTY3ODk6Q0RFRkdISUpTVFVWV1hZWmNkZWZnaGlqc3R1dnd4eXqCg4SFhoeIiYqSk5SVlpeYmZqio6Slpqeoqaqys7S1tre4ubrCw8TFxsfIycrS09TV1tfY2dri4+Tl5ufo6ery8/T19vf4+fr/2wBDAAICAgICAgMCAgMEAwMDBAUEBAQEBQYFBQUFBQYIBgYGBgYGCAgICAgICAgJCQkJCQkLCwsLCwwMDAwMDAwMDAz/2wBDAQICAgMDAwUDAwUMCAcIDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAz/3QAEABD/2gAMAwEAAhEDEQA/AP3yt/8Aj3i/3F/lU1Q2/wDx7xf7i/yqagAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACuPrsK4+gD/0P3yt/8Aj3i/3F/lU1Q2/wDx7xf7i/yqagAooooAKKKKACiiigAooooAKKqXd9a2SeZdSrGvqxxXn+tfF/4d+HnKa1rlnZgOIy8s0aoHPRSxbAJ7DOaAPS6K+e9W/aG8H6fdxpazR3kZDs/kSeYdq4w2YwyoCTjMjKCehr5Z+Nv/AAUb+FvgK70jQ/Dcsd7f6gpluGlZlS1jO0Rs5jVtyncWJU9Fx1NAH6VUm4Gvwc+Fn/BUTxFe+K9afx9fQ3lha3cotrPT7Jh5tmHP7y2VMyZijUyP5r4K/TNbHj//AIKV+B9as9ZmEmovbRwRW+kadbz/AGWS7uZg5lmuJYwGjSLaigA4G5mO44w7MD9xZrq2t13zypGvq7BR+ZqGPUtOmOIbmGTOPuOrdenQ96/jp8W/tYfFfxNrN1fXeu3Mlhclh/ZBuJpLJYmPyxkSNucrwd0hbJA3ZAxWno37R11o11LLPpSW+pvENt/pGqXUM6DZwAIJkgyuScY46Y4p8o7H9h+fXilr+Yb4d/t/fFnTD/Zlj46k0uKHa/ma7ELrzDjHk7gHwCRksfXk96/XP9nn9tnwz8SrIWPirxR4ai1iIBDFLOmn/aGUfPJBIZZYpVz/AHdpB4KjglWBqx+g1FZOnazY6lDFLBIh80AptkSRWyM/I6Eq3HPB6VrUhBRRRQAUUUUAFFFFABRRRQAVx9dhXH0Af//R/fK3/wCPeL/cX+VTVDb/APHvF/uL/KpqACiiigAooooAKKKQnHJoAWvnf4+fHLSfhJ4XutRk1bS9KmQY+2am5aGA4znyY8ySvj7saAsx7YyR4l+2R+2j4c/Z20F9I0KS31TxfdqywWHmbvIBX/W3AQhkUZHGQT0zX81/xN+JHxJ+L+uXHi74ialNqcsrl1MreVbQqx/1dvCMBR2wi5OMknrVxi2NI++vir/wUK0/U7y7TSLXWPFLyAhL2+u20qD5jyY7S3LyKoH3cyD3Ar4Y8TftMeJ9X1C4uINOsI7S8jWGS1m3agUxyXjkuy8qOTySrAemK+fb8yspQXCJtH3RkZB56jj8zXPJFIMsSM9Bg5+vP6VdktgPR0+KXirTL+S/8Pahd6NNI4dhYzyRKx9GCsBjrwcj+dcbqet6jqsguNRmMspz87Y3EE5wT9axwMscn/eb0+lNYjJIHyrwPypXFcsW9/dWc/2i0lMbgMoZTjKsCpH4g4qKa4aSYs7E55zknk9etVgCTz2qJmyalyAtmRi4yc8etOR1Xkjr2qAZ2gjtS8+lVcDSit/NUyKygAZ+ZwOpxwuck1pWVzfabOLiBlV9uASqtw3B4YEfnzXOrke1aEbyYQL1Xv6imn0Hc/ST9lf9vzxT8Gjb+FfHaXGseFEkTKwNm7tFHAa23sBgYDbCduRxgnI/oh+CH7QfgL4xaFb6j4Y1211mGVF2XUJEcm4jPlXNufnhnX+IEbT1UnoP4wluM8yryMtnoSO9ekfDD4peOPhP4os/F3gLVZtNv7KVZEeJjslUdY5o87ZEYZDKRg+xpSj2Huf2+UV8RfsWftfeGf2nPBSxzyQWHjDTIx/amlBsMMHHnwBjl4W4IIztJKnpk/btZEhRRRQAUUUUAFFFFABXH12FcfQB/9L98rf/AI94v9xf5VNUNv8A8e8X+4v8qmoAKKKKACiiigAr58/aP+Ndh8FfAj6jEjXviDVnNjoWmw8z3d4442jBwkY+eRyMKo55IB+g6/Mn9qaw03W/ixJ418bk/wDCI+A9HMaRBzEby+vsl4RIDlIwI18x0+cglQQOaatfUaPyF+LEHh2z1bUfHfxK1F/GHj7UZWZLK1Ik06zL/dSR1J8x0LEEs33hgDHJ+Kdb8VX3mKpiWC5Tepk+YyKn9zbnaoXoMLnPevRPjX8Y9Q8eeJphYtb21hB/o9tFZQrb2sEKM2Et4xkhfmJLH53PLHNfO10zMxLEkt79uuK3uO7GPPLdyAdGYnn1zUk3lxgRqPlGAOep7mrFvD5QDy/fYHA9AO5Hp/Oq/ktO+WBA7n60hFHYxBdumf1p0sZiiXOQX5xUxUtLtXhVOSewHrTZ2E0uU+6OBnrgUCKhAVCe5NV+auTLhtn9zj8e9N8kj8ealrUdhgU7eKckmw7XXinhckKOgqf7OSMgZp20FYcsUbqXjyQOD6j8KljVlAOMhTz9PXNJHC0RDH5fQ5yD7VsQxciVRuByGHU0xpA9stxbmaIfdBDfX1rn4Gkt5TG2Qc9K7K1jFvdLGR8jgqDnhgeR+lZGpWWA0kY+eE7T7qen4igbvuesfBL4teMPg14+0z4g+B7s2mqaXMHGP9XLEeJIJV7xyLlWHoexANf13/s6fHXwz+0V8KdJ+JnhrEJulMGoWROZLK/hwJ7d/XBIZD/EjK3ev4q7Kd4p45F69D7+x+tfrz/wSz+PjfD740f8Kw1OcronxAUW6KzHZFq1upa1kA6AzJuhb1JT0qJrqG5/SbRRRWZIUUUUAFFFFABXH12FcfQB/9P98rf/AI94v9xf5VNUNv8A8e8X+4v8qmoAKKKKACiiigBCcAn0Ffhv/wAFVviza+FNF0r4daYyPf6+rXd9hsvBCpOAU6Bpd5Ct1Chsda/cdvun6Gv5CP2+PiLN8Sf2lfGmpbibfS799GtlGCqx6eBASD33OrN+NVFajSPjSIyXl6XbkIOg6cdAKdOPLlLNjhsc8jJq3ogC5z99+Tx0ByB19hn61MLZZ9UW1HzCIlmz64FaoZItu8qKcHMnPvgepqG+2wILaHAc5zz0HrXTAwopc/O+OAOfmONo/wA96zfsLSSNIV3Hjd7kngZ9B1plJaHMmExoA3IbnGeT/tH2p6Rxxbnf7yrux79hWxc2D7sDLHGS3r9ParOl+G9R1ecWttC8hkx91STyevHP0qJ1IxV5M2pYedR8sI3ZxqQSSuB6dT7nrWw9lJIiiJCDjBJ68f0r6A0j9n/xHcrGxhbfJyFIOR7EHA/AfnXpi/s36nbWImuHRXBwVJZSR22hgCfw/wDr15k81w99JHuUuG8Zb3oHxWbQQ8MpJ/Wplh3LmPnPp1r6l1T4BayYC1uvPVcnO7H8OfU9sfSvONU+GWuaGc3EDYwDkr1z255ranmFKbspHNXyXE01zSg7HmNtb7x2LNxg8Z9j2zVmOIQOAqkKThwfvLjof/r10I0aTlHGG52jHXHUZ9R2rHnie2dpZAfNgbEq/wDPRD1P1x/Ku6LTPKnBxepYEAaPecFCcgjghh6D6/zrNlUzS3Nt/E6kqT6r8w/MZrZjXYrAthCNyk9Mjn8jwaq6ghiP2pT86NtP+6elNmXmcX/x7ur44Jwwr1P4eeJLvwh4z0HxNYSvDcadf2t9BKh2ssltMsgIPrlcfnXDXVsJkc9BgKcDsfun8KfZiSW2jc4wisuP9rpxQSf3QabeR6hp1rfxMHS5hjmVh0YSKGBHsc1dr5m/Y18X3Pjr9l74ceIrx/MuH0SG1lfuz2TNakn3PlZr6ZrAQUUUUAFFFFABXH12FcfQB//U/fK3/wCPeL/cX+VTVDb/APHvF/uL/KpqACiiigAooooAZIUWN2kOFCkk+gA5r+LL9oC21O7+JHi7XtRtjavqWuX93HHjb8k07MpXPbAwDjFf2mTKHidGGQykEfUV/OZ/wVK+Gtj4W8c+GZNGs/Kin0MtdS7Rgyee/lg45yACOc/zq4PUaPx/0orHMJWPGQh49+aVjKmqXE6/L5ucewbnIq15DqhQDBCqfzY5p18oIDp14Un2HStLlJGzppSODzWXOAzgepPyr/Ot3TLU3MZc/wCrX5mJH3iPb0rBtIxKAh4ACgY9j/k13WkOpsPkHLssar9PmP8An0FRKaSOmjSc5aF2w8Li5ihV0y165LHGSsMfLY9zwPqa+4fg58LbGxtxfSQoZ5lDkgfdHbHf/ZHoB615N4D8OHWfEmnaXEMrHawySHgkIf3jZ9MttH41+i/gTw3Gkiog4QsD0xw3vXw+e46UmqUXvqz9Z4byqFOLqyWuy+RY8P8AgGODZMwZQCpJAHGQR6H1HFdsngnTxuaa2R2bHLjdgKegB7Y6+tem2emLGh3c4U9hWkLRG2kqOv8AMfWvnbs+rVNWueK6j4OspEkZYVBII4UAc9SBjFfM/wAR/h6otySn7pXBPHIGcdeuME5r78msk2Fdv0rz/wAS+Hre8tJYnQEOpBqoynF81zGdFNWa3Pxt8e/Dx9PnkurCIpHH82Ouceg+h/Gvn7XLJBctMFxlcN6EA4P6V+sHjDwZFOskTIDgFTnrj/PNfnV8RvDLaH4q/s1lISd0RT2y4YAfmK+wyPNXUTp1Hqj4DijIYwSxFFdbP5njhtWW2ED4ICvGpPH3R0/D1rDmkWZRDJwdhRvfBJU/pWxe3uyOa1biSLa2P9qMlG/McfhXNTTKZVdeABn9civq7o/OZxadiwAdnzH78ZPsSOR/6CaqW2Y4JFGMebwfrV8PG32dWIVeAfxP/wBc/nWW5khZo8FSkxznpxxQQf1o/wDBOWK9i/Y78Am8Xb5kV9JD7wtezFD+PNfcFfPX7J3hh/B37Nfw38PSoI5Lfw7ZO6js88YnYdudznNfQtYEsKKKKACiiigArj67CuPoA//V/fK3/wCPeL/cX+VTVDb/APHvF/uL/KpqACiiigAooooAK+Nf2xvgL/wuH4e6nNpcKPrMFk0duSm5mCbnVByOrHPXrivsqoLmCO5tpbeVd6SoyMucZDDBGaaA/iGvrGbTb+5sLhds9tLJbyqeo2koy8dwc1kwaZLcSLGoLAnA/GvoP9oT4d3Hw8+M/izwncWosY7XUrloYQxfbbu5aL5iSTkMOpzXafs//Dew8Xi5vrpA32RhtB/ixnP64rDH4lUKbqM9vKcA8XiI0k9zwOy8KXxtCzRnzApwvQjeVGfwDV2nhPQopNGnmlyHiupEJ2kgKYflOPqW/Svse6+GOnx39/drA20SCRVRPm2KIiV2jrypryyw0htPDtbW/k27Xhnn8wHICMIzlW6AJk8nNeCsfKumon31PI6WElGT10Z3nwH0u5TxHe39zEyeZa2wUkEdgTj2DZFfol4IsvKXzHXq24H1zXwn8KvF3hzTtdurXU7kqN6rEVGVCMAe3qw+lfoT4V1LRb23jbTruKUkA7QRu5HpmvExuBquo6kkfTZfjKDpqnBnfRghfl4/+vVjsMD34ot13Lxg/rV5YPl6H+lcHsHex6HtEkZ0hyOlcxqBDKa7GWDg85/QVyOsSWtmjSXEsca4JJdgvA75NafVpS2Qe1ilds8V8SWCCYvjAb19O9fnv8cfCZufGum3kShfNm37D2EcTFd2On3Sf+BV98eLvG3ha1Qp/aEMkr52orbj6ds/jXyP8UNUOpyPe2lo5uY4ZFhYYJJcDax7Ben4V2YTBV6M1UXU83FV8PiKcqbd7a/cfmRrCmfXb0xZYGeYfVS3P9a5+S1lXYSOD619laB+zzrVzDb3M4Umf5WkUhlczEMzD2XOPc59q0/jb8FbXw1oFtrGlxbfsUKRXGOc4UAvx79a+pp5tQdWNFPfQ/NcTwviY0J4qStbW39dj4kYSsqFeNjEfUEYOfavWfh78OdW+IF1aW2nxmRX1bTNNkfIyG1CYRxhs9uCAfpXn86QDaF5LKTx69DX7f8A/BMX9npPEfw91TxN4usiiHXdJ1jTpGx+8NjHJ5J4OcK5Jwe4B5r2pOyPkHofuB4d01dG8P6ZpCfdsbO3thxjiGNUHH4VsUUVkZhRRRQAUUUUAFcfXYVx9AH/1v3yt/8Aj3i/3F/lU1Q2/wDx7xf7i/yqagAooooAKKKKACiivNPi745m+HfgHUvFFpCJ7qBVjto26NNIdq59h1/Cs6tWNOEqktlqdGEw1TEVoUKSvKTSXqz8Lv8Agqd8JG8LfF6y+JNlGfsHiiyVJ8KcC7gJBy3cuoBA4PB7V4j+yLgaLqJ/iFwAfxB7/lXtn7W2v/EP4o+BrXUfEeq3N3Fp9w9w1nKUeKKWRSu6Mqq7QFyAOntxmvEf2U98I1i0P8LxNj6gj+leJj8XHE4Fzh3PusrymtluZxoVrN2ex9srp8kqMLcDczccdD689a2NP+Gmg30TLqFpG5lB8zICk7jyTtx1q9p+Io9x/Ws7VviBonhWJr3WLuK2gTlmkkVB9OeSfQAE18nHESg+WG5+hQhF6z2RT1X9mnwHqoM9nEbS4IwXjOOOo6e/r17iqGnfB3V/Bk6T6fqclxCjKQkiqMY4ypXGPSuUvf2vdA0vVBolh4e1TUpxDDcYjhWEGG4mS2idWuHjJDyyIo+XvnpzXrHw8+OPhD4p2Lz6XFcWUqzSWrwXkflsJoQDIiMMo5UEEhSTjnpzXrVp4+nT56kXbzR51Ctl1fEOjRkuby3O48K6nqtqy217IWwMZPsa9VivsoGz1HT1rzMBEm3g9DxXb26b7MSA546/QV5X1lzldo9iVDlVjB8Ra9NEDDExXIP3RnnsK+dfFHgPxL46uwJrx4ISQ20sx3c54AOOO2eOmRxXuN4qyzkEbuazPEPjzwz4A0ifVNcZkS3hknkWNGll8qJdzsEXnCjqTgD1row+MqX5KUbszxVGkqbnWdkjyPRv2Z9DiIudavriVhkrCjBV5/vtjLH6musvfhJ4X0+3T7JGGmjzskfGVBH3eAM5968s0/8AbP8AAOqX9rZLouu20V9MsFpc3FjKsc8jokqqmASSY5EcADJVlIyCM+s2PxF8P+K7VrnRblJ0UlWCtkq68MkinDow7qyiurGVsZRV66aRwYCpga91hpJ+hx/9iQaVF5EcUcaLnCoMAZOeK8R+Nywv4D1bzAMG2cfjX0bfTLdoWHpXy/8AtBu8Pw41iRM8Rgce7CuHBNVMTB+aDMZcuGq+j/I/LvwP4V1Hx9420Pwbo8Mlzd6vqUFnHFGPmPmyBGxz2Bz1r+z/AOG3w+0D4a+EtN8K+HbSOztbC1gtlSMdoYwgJPc8cnqTX8uH7E8Fx4Y+Jj/EO10231G/0OMyaeb4E2sM0wKGZkXDO6AHYAwAPJPav6If2fP2iX+Kl/eeFPEMEMGtWcXnrJbo8cNxGCA21HJIK57Egj07/dvH0fbewv7x+Sz4exzwbzBQ/dr77bXt2Pqyiiius8EKKKKACiiigArj67CuPoA//9f98rf/AI94v9xf5VNUNv8A8e8X+4v8qmoAKKKKACiiigAr58/ab0641L4V3SQqWWK7t5ZMZ4RWPPHuRX0HVLUtOs9X0+40u/jEtvdRtFKh6FWGDXPi6HtqM6V7XVj0cpx31PG0cVa/JJP7j8atc8Mafr3hnVdKvNv2e5t8AHjDFOGBHII9q+Kv2aLFrTUNcDDCmcIOuf3TuuSO3FfoB8QtLm8I67d+FZW2m3vJYQTwWjz8h+hXB/GvlTwB4f8A+Ea1zU4doTfc3EXH8TRylmPv/rB718ZCpKFKpQff8T9vx1GnXqUsfHqnb0Z9MQxrNaeV0yMZHWuHm+GGl6nqiahe24u5ITujMw3Kp9QDxmu80VVmKg9BXq+lafG20FcmvMinGfNF6nTRrOCZ8i/GH9lTS/jNdWHiDUJv7M1KztxZvNbqGE8CHdHvRgBuQkgEEcHnOBXc+DvgzaeC/Bdj4D0C4NvZ2czXJnaJWuHuWIPnGTGd3AACgADivq7yFRPLxwBWddWyRRM+MGvWq4+tOnyTm2jDD4HC06jrU6aUn1PO9XuVgaCFCDIEBkKjGTgDOO2euK3NP1NhYFc8lTXLXirNdMzmt21+zLac8cY61887tuTPYskuV9Chpt/HNqQhn6MSPz6Vy/iXwVc6mfENnqDQ3Vn4itpbGdGiPmR20ihRHG6nIC/eGB94k85rQliVLxZ4z0avVLFUvrZJJFBcDGfXFdmCrTpTvF2Zy4qjCpFqavF7pn55fDr9jeXwn4z0/wAWanr1zr1no063Nlp8zvHGssKqkDSl2YERhFG1EXIRRkKMV7DrHwvt28SS+KI0FrqVw26aW3ym/g8PtwGHucmvrtbdVGAvX2rE1HTY2BYAD8Old+Lx1evHknO6PNwWEw+Db+r01G54Xaae9naFJ2Lv3PX+dfNH7RkePhrrmAOIQwH0Ydq+vNai8ndivkz48CS/8G3ul22GuL4x20QPdpHAFc2Bjy1ovszLH3qUZx6tMqfs1eBYdH+HNve38am4vYvOyn9xyXjDDrkBs8+tfbf7OMFzZfFjw9eWS/NcLLHKFHWJkbdkj06/hXz34M0oeE4LPSlkYwzQwrz0JWNVz+mK+/v2TfCAluNT8azgFLXdp1oR90sTulYH2G0fia9LBwnWxkW973+46M6q0ssyOtSeqlHlXm3p+G/yPt6iiivtT+fgooooAKKKKACuPrsK4+gD/9D98rf/AI94v9xf5VNUNv8A8e8X+4v8qmoAKKKKACiiigAooooA+FP2sfhitzPB49t4pDA+yG9khJDwSr8sUvcbWGFbI6getfn5rOk6joWq2Vx9qFxYzyyP80eJUebBOXHUZJ4NfvFqGn2WrWM+m6jClxa3KGOWJxlWVhggivzS+LX7PnjTRtQuofDuk3Wuaa5L2clqgkdEOTslAO4MvTPQ4z3Ir5rNculz+2oq997H6XwxxFCWH+p4qduRe6327eqPKPDNxu257mvabSNrm0MUczwk4+eM4YYOeMg184+HrmSFxFKCkifK6nghgeQfcGveNCvd0ajPavmnpI+5pJSjc9AVug5OO5rP1If6M5z2pytI0TGIgSFTtLDKgnpkDtWR4hmuLfRp5sAukRJxwN2OcDnAok7pnVGOqPEr/WRPqhsLdtz7zux0GK72C2kFgCVOcdcV5TpcujaNBDqup3UEUkzHmaRVLuTnA3EZPsK9vt/FejnR15jICnnP61lRpRau2a1aji/dPI7jW/7O1IW91wjtgEjjOa968Pt5trHIvRgDmvnTUNQ8O+Ir25ht722kmiB8yBZUMij1KA7h9cV7R8NLyWfRY45CW8nMasedyrwOazgrSsOo04XR6QyAdvesTUXCxtyea2pmO3Fcdq11tUjIroaOSSVrs8z8SzKFkx2BNfK2uRXfiHxjYafaW6XiWj/a54pZPLjIU7U3N1HPPHNfQXizUAsUpJ7HNefeBvD2sXk0t/a6RqF1canNstWitZXWZEO0CNgu0jcDnB4rfDwm2+RXZwzqwhJObS9XY1bHRtc8R+INL02D99ezskFvZ2aE7pTxgOTgKOpY9Bk1+ynw98H23gTwhp3hm22s1rHmeRRgSTyHfK/4sTj2xXkfwF+Cdt8P9NTxH4itkbxPeod5JDiyibpBGRwGI5kYdTwDgc/R9fY5bgPYRcpfEz804s4klmVSNCD/AHcL2833/wAgooor0z48KKKKACiiigArj67CuPoA/9H98rf/AI94v9xf5VNUNv8A8e8X+4v8qmoAKKKKACiiigAooooAKKKKAPx1+IejN4a+KPiTR9pRYtRmkjz3SY+apHsQ1dPoFzkKvWvUP2t/Cz6X450zxhCmINXtfs8rAcfaLbgZ92jIx/umvEdEuQAp9BXwOY0HSryR+3ZDjFXwlOp5W+Z7dZSApjOKm1DypbWSF8YkUg554NclZXuB14ovtXCpjcDXmxnc+hU0lqeUat8MvDGoXJTV7ODUbPduFvcoJEQ9crnpz2q/c/DiwdoxbXU1tbOozbo2FAPGFPYe35VvXGoWykPcTrEjHkt3+g6mpY9S0uV0uYtTiFvHgMGyHGBnp/8ArqoKTVkjvVKrVXOl+B5pa/CrwvaXbSaXp1rpkzvm4ubWPbNOOnzNzye5r6M8OW1pp2nx2lsoRIwB+XvXm3260lPm2c6yoD2OGH1FdDpupADG4ce/WpTd3c5q83F8k1ax39zcKqEDGT3rzzXbj5SQee3tmti4vS4yDXA6/ebY257U4yucc3ZHkni25eRJET5mbgAc5J6D8elfsd8LPDTeDvhx4b8MuNslhptvHKB/z2KBpf8Ax8tX5S/DDw2/jz4teHfDoXfD9sW7u8jIFvaHzpM/720J9TX7L19fkFFxpyqPqflvGuKUq1Oguiv94UUUV9AfEBRRRQAUUUUAFFFFABXH12FcfQB//9L98rf/AI94v9xf5VNUNv8A8e8X+4v8qmoAKKKKACiiigAooooAKKKKAPmX9rbTku/g/c3+wGXTL61uYzjJGX8p8fVXNfnRoOqK4XJ9M1+pP7Q1st18HPEkbAELBG/P+zMhr8fVll0q7CkERseD6V8nn6XtV6H6VwbUf1aS6cz/ACR9C2d0HjG081zPiG01q9t5f7PuktJFBKs6bwSOgIyKp6BqQnAw2a7BkEylR34wa+Scne5+gUpq6bPnO68KeLNafdJrbmYHbhIlXHbA3FgK3bP4YeOyn2ca00YPzMDBEckerDFekXXhbUmm87S7hoH6g7dwz7g05fDfxAZjINXhUD+EwHn/AMfr06WOg42cH8j7vBcQ0qVBU3Tj9x5O3gnxjpt1vk1xY3XlP3I/I7WAx9RXpfhy18QwRLLqd9Fd7j0jjMYHb+83NWk8M+IJZ1fV7xZQOcRptB/U12Vtax20QRRgCuXE4iM9IRt+Z89nOOp4ipzKCXyLjSiO23OcHHf0ryvxPqqpE5LV0niTWEs4D82MCvnjW9Znv7jyIiTubA/xopb2PnKtTQ+9v2HNEivtV8WeMp0DSW622nW7EZKiTdNNj0ztTNfolXxt+xLpK6f8MtTusfNdatIGPr5UMY/mTX2TX6Hl0UsNC3Y/FM8qOePrN97fcFFFFdp5IUUUUAFFFFABRRRQAVx9dhXH0Af/0/3yt/8Aj3i/3F/lU1Q2/wDx7xf7i/yqagAooooAKKKKACiiigAooooA8n+OgJ+EnifH/Pnn8pFr8m7rRzeQFwMtjiv1t+NG3/hVPijd0/s6X8+MV+aOmWQmt1x1IFfGcTSaqwt2/U/S+CNcNVX979EeM29xqGgXG9gWjB5r2nQNctdRgSRSCeMjNVdR8PRzoS6cnj615peaFrWhStd6Nll6mIk4P0r5jnW8j7XVbH0db3Vuq84GRUkl4DkqQecV81R/E02rG31WKW1kHUMDjPselXovifZBcJKuPXOa3jUS2N4zaPepbiIfeOciuc1fWrWwtnnkcKADXhWofFyziYxwlppc8JGNxP8AQVzYk8VeNZg00bW9rniMZyR/tGlJxvdkVJyerLmv+JrnW7torTlc9R0qbRfD7/8AH1OCT1Ga7zQPAUduitMuAvOAOtdZqOmRWlphQFAHArP2jb0MuXTU+9f2TYBD8IYCBjzNRvH+vzBf6V9L189fsuxCP4OaY6/8tbm9f/yYdf6V9C1+n4NWoU15L8j8OzN3xdZ/3n+YUUUV0nCFFFFABRRRQAUUUUAFcfXYVx9AH//U/fK3/wCPeL/cX+VTVDb/APHvF/uL/KpqACiiigAooooAKKKKACiiigDyL48zLB8IfEzMcbrVYx7l5UXH45r8/PDkaSRKD1wK9w/av+Ii3t7afDnS5N0drIl1qTIeDLj9zCf90Hew9SvpXiHh4lUTHTAr4PiDEwq4jli/h0+Z+s8H4SdHBuU18bv8un5HXS6arR8DcD+YrEfTYw5Vl/Mdq7q2KyRYas+8tgQePoa8FwPqzjbn4f6FrSE3cCNn25rlpvgR4RZi3kFeegJH9a9Wt2a3IJJP1/xrWkmDLnH5nvS9kmjeEuh43ZfCHwnpTiSG0TPqRn+ddPB4etLYBYYgoB4wO1de5MhPQ0iREnH6mpVO2xNR33MaKwRY8Y+lcL4sKpbNt4wPWvULj93GeOvrXkPjKcGJx6D9a1StuYs/QT9mLafgnoDLzua9J+v2uXNe+182/sn6nbX/AMGdOtoHDSWF1eW8y55VjO0oB+quDX0lX6hhGnQptdl+R+E5kmsXVT/mf5hRRRXQcQUUUUAFFFFABRRRQAVx9dhXH0Af/9X98rf/AI94v9xf5VNUNv8A8e8X+4v8qmoAKKKKACiigkAEngDkmgAor49+Nn7dn7N3wL86x8Q+Jo9Z1qElTpGhbb66VwPuysjCKLng+ZIp9q/Iz4vf8Fevi/4mmlsPhJoth4OsQx2XVyBqN+6HjnzFECHuQI2I7N60otgfvr8T/ih4H+DvgzUPH3xC1OLS9H05MvI5zJLIfuQwR/eklc8Ii8k+2SPinwx+3lH8WNCur74eeDNW0mCTclpqWuGCJX5x5sNtE0jOAOQXKjP97mv5yvin8evjB8bb63vvil4p1DX3s8/Zo7lwsEG77xigjCxqT0JC5Pc1+on7KXxG07x18MrTToiqaroiLZ3kX8RCjEcoH911/UEV42e16+Hw/NQ67vsfS8MYLC4nEuOJ6apdGexa7PcT6n5txK89zcymWaVzud3Y7mZj6k16VoS5hX8BXHPo0sl19rcEkcAdq9B0S2YIB0r87im9z9bSUdjtbEHbzVuWP+7+VVbQFRjHFbJjDLnrXRHsx31Mb7LkgjP061J9kxjIq/twenQ1MACMk8Hj3rXkQ+cyfKUcAcmm+WF4zyKtyhRkk5561XP3c9KzkrDbMfUpMRnB5ArxTxU7SKwzXreqSZBFeY61ZvPn0JNLluhPRGb8Hfi54p+EOtXd5pEK39je8XWnzOY45mQHY6yBWMbrnAbaeDgg9u21P/gq34R8F+JoNA+KPwy8R+H7aaQR/wBo209tf25yfvx48ouvfGQ3+zXnEXh/BBA56/jXxH+2h4t0/SNCsfBsSRyajft57kgFooYzgNz0LNwPoa+hyLHYj2qw9rx/I+M4oyjCOjLFyfLJduvyP6TPhx8TPAvxc8JWfjj4d6xb63o16P3dxbtko4+9FKhw0ci9GRwGHcV3VfxZfBv9oP4vfAHVp9a+FXiW60SS6Ci6gUJNa3IXp51tKGjcjsxXcOxAr9VPg5/wWK8S2lxDp3xy8KW2pWnCvqegE29ynP3ntJmaOTjrtkj9h2r7VwfQ/MD9+aK+cPhF+1v+zv8AHBII/h/410641CcDGl3cgs9RVj/B9luNjsw/2Nw9Ca+j6iwBRRRQAUUUUAFcfXYVx9AH/9b98rf/AI94v9xf5VNUNv8A8e8X+4v8q+Ufjv8Attfs8/s9GSw8Z+IkvtcVSRoukAXl9nnAkVSEh5/56uv0NNJvYD60rivHfxI8A/DDRJfEfxD8Qaf4e06IEme/nSENj+GNSd0jeioCT2Ffz4/Gn/grx8X/ABd5+l/CTSbTwVp0gdFu5cX2pFTwGDuBDGcf3Y2I7NX5e+NfiP43+IusPr3jrW7/AF7UJM7rjULiS5kHspkJ2j2XAq1DuB++vxr/AOCvvw78NyT6T8EvDs/iu4UFV1TUy9jYBueUgx9olXvz5WfXuPyX+Mv7dP7SfxvWex8U+LbjT9InJzpWi/8AEvs9v91xEfMlH/XWRq+QS7uBnv0pxXndjirStsA9pHkyWPX/AD1pq4zkjB7H+lKFzT/KwB6UwJlO4ZHBHavTfhT8UPEXwk8X23irw++4odlzbOSIrmAn5o3x+anqDzXlvKn09PWrEbKw2twe3pUThGcXCSuma0qs6U1Ug7NH9C/wq+L/AIB+Mfh+DVfC92guVQG7sJCBc20h6q6dSM9GHynsa9u0uzByMdD/ACr+Zvw74m1/wfq8Ou+Gb+fTb+3OY57dyjcdj6g9wRg1+n/wL/4KAaUDBovxltWtZDhP7Xs0LwntumgHzL7lNw9hXyGPyCcHz0NV26n6NlHFdKpanivdl36f8A/UDythGPzrYt41ljxXGeGPiF4B8faeuoeDdesNWiZc/wCjTo7D2ZM7lPsQDXW2NwFLL37V4FTDuHxKx9jRqRqq9N3Gz2zKfkBqiwmGQRXT28sN0dnQj1q//ZkTrk4xUU4Nq6HOXI7SOKjs5JD83Skv4BbQk57V2bx2sB2qRmuO11jLMsanI61HI72ZrTV9WcRNAz5dicnmseewWRS2OmcV0Oozw2kLPI6qqDJZiAAB1JJr4q+NH7ZfgT4exTaJ4P2eI9dUFGWJ/wDRLdvWWZc7iP7iZPYkV6WFwU6z5aaucOPzChhYc9aVj2X4qfETwn8JvCUviPxFOqlF229spHm3M2PljjHcnuegHJr8LPiH431r4keLL/xdrz5nu5CUjB+SGIcRxJ/sqOPc8960fiF8TPGPxS11/EHi69a5lGRFEPlggQn7kUecKP1PcmvOpZV5A5J/zzX2WW5bDCxvvJ7s/K89zyePqWWkFsv1ZVlwBlevbn9aqFgOn4+9WSpcnHzHuf6Uz7OOMmvSPnxIZzDLHcQu0csZDI6Eq6sDkMpGCCOxFfeHwc/4KN/tR/COG30xPEo8U6RAUC2PiKM3pEacbEusrcKMcf6wgelfCBjjHOaduRB8q5NAH9G3wp/4LAfCHxGYbH4q+GtS8J3LBQ13ZMNUstxPJIVY50X/ALZvX6YfDX4z/Cr4w6aNV+GfinTfEEOMutpMDPH/ANdbd9ssZ9nQV/Ez5zjoduD2q/pXiTXvD9+mp6HqN3p15F/q7i0mkglT/dkjIYfgalxQH90tFfyvfAr/AIKd/tH/AAmnhsPFOor4+0JSA9prbs12iDA/c36/vVOOnmCRfav2a+CP/BS79mn4v/ZdM1bVX8Ea7PtT7FruI7dpG42xXyZgYZ6bzGT/AHahxaA/QeuPrqre4t7uCO6tZUmhlUPHJGwdHU8hlZcgg9iK5WpA/9f5S+Pn/BTL9oL4x20mgeHbpfAvh6WMRPaaM7C6mXGCJr4gS89xH5akdQa/Oue4nuZnmmdpJJGLM7kszMepYnkmhY9oBPanqgLen0rewEKoxPA+tSqMMMj3q7HEjEkd+lSGAZyP85qrAVlUcHg4qUICTnp7VP5W37uCaMYH1607AIqKACP1p4RcZI/D61IRx0AwB0NIScggn6+9KwyEqMbh2NRFAOvTrVwgY44B60Y3LhTjAosO5VBIGHyRjqOo/wAaYSQMg5qy2Dgiqx9RwQetICxY6jf6ZcLd6bczWsyEFZYJGjcEdMMhBr3Tw1+1J8fPCiRx6V4z1GSOPAWO7KXi4Hb/AEhXP614GMjcGAODyRwf8Kdsjx/EvOOVz/Iis50oT0nFM1pYmrSd6c2vR2P0F8Jf8FFvivpEiDxVpGma2gwGeHfZSkfVd6Z/4BX0FD/wU78K/ZFE3g7VVuABuC3VuUz7MQDj8K/HbYuch1x75H6EUrQE/MroR/vLn+dcM8owknfk+7Q9eHEuYxjy+1v62Z+qGp/8FM7kzFtJ8EKyDobnUCG/FUhI/WvPNd/4KN/Em/3f2N4c0iwY8B5WnuSP/Hox+lfngttI+cDPGcAjtz60wxFG+fAx6kf0ohlGDjtTQqnEmZT0dZ/KyPbfiH+0P8XvigrW/irxBM1m55srQC1tj7MkWC4/3y1eMrj8B2/xpmUGCBu+nHT3PNDFpODgDrgDArvhTjBWirI8irWqVZc9STb7sc8jMu1Mf73+FQMpHH5+9TYyOvT2o65B/D/GrM7kSpwOOtKYgetTgYbGc0j5AwOtAiqI8/QdaYVAyas5xnj9agbLHGetNiK7YPHNRkY56571bCbQOMmoihOM0gK/I6U9ZWWnlMYx19OtR7TSA+1v2Xv25/jF+zTqVvZaZevrvhIyA3Xh6/kZ4Ch+81pIctbSY5BT5SfvKa/U7/h758Ev+hP8S/8Akp/8dr+dnkD+VN8yT1o5V1A//9D8SkUHAH/16QxkEY9TVhAB1qXYucnOPT0rqaGRJnj2H0qySeg/OiMjnrz796lII9j3zRZiGA4yCc5zimhMggnJPrT2fHJHT0H86UkHBJPvTt3GPkQLGFx82cH1qvgKMjkdPXrUq7GOfc5pzqNu1R175pNDSIOACB6cetLxsBwaFXHuR1p2d2VJ9+OKVg8yPG7PGDiq7DPHOWq22GHTGagKkdf4T+VDFchIyOfTHvxRHu5IPbjPtUwwF54wf50w5+6eO/FIYwyH7rfhn1pFCsAMD6Y70/YDkenNOVVC+2OlADIpGiBEeV3Aqcd/XPrRuBGAo5HXHpUijIz75pSMDGOnegCAdfc0oHPXrU6bUbuMHg0Njk9ceo9e9NCGAEgelCr61JjAIHA/xoAIGD3HrQgIm744pGG7+lSEcc9BSFQOM0DI9uQc0mw9T+FSjJ4pDjHHagGRsoKjHNMK9j26VZAGetNKj/DvQIqMvHHT1qHZxir5XnNRHI9j60rCKZTtUWxPU/rVw5JyaZt/zigD/9H8VkB4XH1xT2X+Ht196kTIfcMZ4H6Ux8g5TPfJPNdjd9CtxIyoOCMFj1/rTzxjPqc+tQg4AYdRUg5GT1wQaBDtw8vHrTVGQMdM03pgg8HvRg5wT/TOKLgSg4znqenvSndtB9Kafugf070pyVGKl3egxMBsE8E5pSDjC8EHFSDcMk4ODxzR8rEjHUZ7mhIRCPubT1ByDmmYzvGMZGfapSO7D2OajGR374I6UW7gMZew7jvxTFUE565FSHBAJ55pvG3I4waQ0OHB68emBTQhyM/5/CngDJGOP5U9lUA4+tICPIGCBjHH1oypAX86QgYIzycfpQOQTjNMQrKAdpPTg0wAg9eOlP2rzk8HpTgD0PGeCaAGEH8utOC4BBPQ0HJGex4zSqOPXsaegMbyW6cGm7SVzxT24Oz15HNM5IwBz3ptDTEbg+/vSKDnJ7+lKOVwTmlXA5pPYQmew9afnnimhRnJqTBKnI5otcCPB7jPtUDjjJqxnue3FNYZyKHvYCljGD+lHnL6fpUrrt5+lV8fX8qSv0C9j//S/FxABGpJ5OP1oJGcN05wKcpwoIA5Ax7VGc4Jxyenc12Jdil2I2yeOmKd3A9s03GWzgnJzTwDuJx9f1o0AUrk7c8e2OtOQYbB/wA5oYEMSueOtMDMQCfXqaBEvBBFHIQkc4znsaahYMCBn8Ke2AxAHU0W6jaG7l4PqKNy8N+FJnAx2zx+PakwxGw8kHtSYbj2PGMYwefxphH3ieAMHijHUd/ekzkZ5AbI5pC1GkjHvnPSkByc8kHk49frTh90HsDig56L05pDFJycjODwR1/Wn4IQk8+lNUEdOncU8k85Jb8KYdCLoBgHj+X40zBHPPrUu3cMgEjuR6UEYde3FFgt3IupbtjpT8u3OACeR9RSbcHGeO3/ANalfPAHQ/zoBjfduh9PX6UpYYyefWnOxIwMVHnAAPIHrSEKzZYDqQeKYcbjjr6Uc5AA+n1pCCM+h7UAOH90HjOc0cc0qvtGOtKecH19KdxCgZ4xwtPAJ7/jmkIyfQfSl24IVBVJdBiMoPIOD6etMIznIzipfqOeueaYdwyowehzSYFeQEjd7/pVPMVXZOFwcdaytp/yKVwP/9k=',
 
-    /* 内容数据（V3）：关于我 / 技能 / 项目 / 计划 */
+    /* 内容数据（V3）：关于我 / 个人档案 / 技能 / 项目 / 计划 / 补录问答 */
     content: CONTENT,
+
+    /* AI 孪生「答不出来」的暗号（V6）：前端识别到它就不显示，改成友好话术并回报本人 */
+    unknownToken: UNKNOWN,
 
     /* 给自由输入的问题补上页面资料（菜单按钮自己有完整 prompt，不走这里） */
     questionPrompt: questionPrompt,
@@ -2259,8 +2320,8 @@
     },
 
     changelog: {
-      date: '2026年9月',
-      version: 'V5',
+      date: '2026年10月',
+      version: 'V6',
       groups: [
         {
           title: '已完成',
@@ -2287,7 +2348,9 @@
             { text: 'V4 部署与分享优化：分享卡片、图标、站点地图、404 指引', done: true },
             { text: 'AI 问答更稳更准：偶发断线自动重试，回答一律以页面资料为准，真连不上就用本地资料兜底', done: true },
             { text: 'V5 社区消息搜索与筛选：按内容或昵称搜索，可只看自己的消息', done: true },
-            { text: 'V5 公告栏：打开网页自动弹出，项目 / 篮球 / 健身 / 学习一屏看完', done: true }
+            { text: 'V5 公告栏：打开网页自动弹出，项目 / 篮球 / 健身 / 学习一屏看完', done: true },
+            { text: 'V6 训练 AI 孪生：录入生日 / 爱好 / 想一起学的 / 平时喜欢 / 大学目标，聊天框里问就能答', done: true },
+            { text: 'V6 答不上来就回报：孪生遇到没学过的问题会记下来，我在后台补答后它立刻学会', done: true }
           ]
         },
         {
@@ -2320,6 +2383,217 @@ window.SUPABASE_CONFIG = {
   url: 'https://qnctdjwoylhfbqigqkje.supabase.co',
   anonKey: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InFuY3RkandveWxoZmJxaWdxa2plIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODk2MzAxODYsImV4cCI6MjEwNTIwNjE4Nn0.j6KMMpwOHU_hwAtL3WNYO7EbVsSwJ5ZhvWa1MhyG1l8'
 };
+</script>
+<script>/* ./assets/js/qa.js */
+/* ==========================================================
+ * AI 孪生「持续训练」模块（V6）
+ *
+ * 两件事：
+ *  1) 学习：把本人已经补答过的问答从云端拉下来，喂进提示词。
+ *     同步先从 localStorage 缓存里读一份，保证断网也有效；
+ *     再后台刷新一次。
+ *  2) 回报：访客问的问题孪生答不上来时，把问题写进 qa_gaps，
+ *     本人在后台补答后，孪生下次就会了。
+ *     断网时先排进本地队列，联网后自动补发。
+ *
+ * 设计约束（跟着项目现状走）：
+ *  - 纯静态站 + anon key，没有账号体系，所以「上报」只允许新增；
+ *    「读取待答」必须持本人口令走数据库函数（见 supabase/v6-qa.sql）。
+ *  - 同一条问题不会被同一个浏览器重复上报（本地去重 +
+ *    数据库侧 question_key 唯一索引兜底）。
+ *  - 失败一律静默：这个站的 Supabase 在国内偶发不可达，
+ *    不能在控制台刷噪音。
+ * ========================================================== */
+
+(function () {
+  const cfg = window.SUPABASE_CONFIG || {};
+  const BASE = cfg.url;
+  const KEY = cfg.anonKey;
+  const TABLE = 'qa_gaps';
+
+  const KNOWN_KEY = 'qa_known_v1';    /* 已学会的问答（缓存） */
+  const QUEUE_KEY = 'qa_gap_queue_v1';/* 待上报的问题（断网排队） */
+  const SENT_KEY = 'qa_sent_v1';      /* 本机已上报过的，去重 */
+
+  const MAX_QUEUE = 20;
+  const MAX_SENT = 80;
+  const MAX_KNOWN = 100;
+
+  const PD = window.PROFILE_DATA || {};
+  const UNKNOWN_TOKEN = PD.unknownToken || '__UNKNOWN__';
+
+  const ready = !!(BASE && KEY);
+
+  /* ---------- localStorage 小工具（全部 try/catch，隐私模式也不炸） ---------- */
+  function read(key, fallback) {
+    try {
+      const raw = localStorage.getItem(key);
+      if (!raw) return fallback;
+      const v = JSON.parse(raw);
+      return v == null ? fallback : v;
+    } catch (e) { return fallback; }
+  }
+  function write(key, value) {
+    try { localStorage.setItem(key, JSON.stringify(value)); } catch (e) {}
+  }
+
+  /* 归一化：比对「同一个问题」用的键，和数据库里的 question_key 口径一致 */
+  function normKey(q) {
+    return String(q == null ? '' : q).trim().toLowerCase().replace(/\s+/g, ' ').slice(0, 300);
+  }
+
+  /* ---------- 1) 孪生「答不上来」的判断 ---------- */
+  /* 主约定：后端 AI 遇到资料里没有的问题时只回 __UNKNOWN__（见 data.js 的 RULE）。
+     但实测模型并不总是听话 —— 有时它会回「没提到。」这种自然拒绝。
+     所以这里三层判断：
+       1. 明确出现 __UNKNOWN__ -> 不知道
+       2. 整条回复基本就是 unknown -> 不知道
+       3. 兜底：回复很短，且整句就是「没提到 / 不知道 / 未提及」这类拒绝 -> 不知道
+     第 3 层限定「短回复」，避免正常回答里出现「不知道」被误伤。 */
+  const REFUSE_RE = /没(?:有)?(?:提|说|写|讲)(?:到|过|明|及|出)|未(?:提及|提到|说明|包含|收录)|不知道|不清楚|不了解|无法(?:回答|确定|得知|提供)|(?:资料|信息|记录|内容)(?:里|中)?(?:没有|未|无)|没有(?:相关|这方?面|更多)?(?:的)?(?:信息|资料|记录|内容|提及)|不敢(?:确定|乱说)/;
+
+  function isUnknown(text) {
+    const raw = String(text == null ? '' : text).trim();
+    if (!raw) return false;
+    if (raw.indexOf(UNKNOWN_TOKEN) !== -1) return true;
+    if (/^[\s"'`*_.\-]*(__)?unknown(__)?[\s"'`*_.\-!！。]*$/i.test(raw)) return true;
+    const compact = raw.replace(/\s+/g, '');
+    if (compact.length <= 30 && REFUSE_RE.test(compact)) return true;
+    return false;
+  }
+
+  /* ---------- 2) 已经会的东西 ---------- */
+  /* data.js 里永久写死的 + 云端学到的 */
+  function knownPairs() {
+    const baked = (PD.content && PD.content.qa) || [];
+    const runtime = window.QA_KNOWLEDGE || [];
+    return baked.concat(runtime);
+  }
+
+  function isKnown(question) {
+    const k = normKey(question);
+    if (k.length < 2) return false;
+    return knownPairs().some(function (p) {
+      return p && p.q && normKey(p.q) === k;
+    });
+  }
+
+  /* ---------- 3) 上报知识缺口 ---------- */
+  function markSent(k) {
+    const sent = read(SENT_KEY, []);
+    sent.push(k);
+    write(SENT_KEY, sent.slice(-MAX_SENT));
+  }
+
+  async function post(question, source) {
+    const res = await fetch(BASE + '/rest/v1/' + TABLE + '?on_conflict=question_key', {
+      method: 'POST',
+      headers: {
+        apikey: KEY,
+        Authorization: 'Bearer ' + KEY,
+        'Content-Type': 'application/json',
+        /* 同一个问题只留一条：重复时直接忽略，不报错 */
+        Prefer: 'resolution=ignore-duplicates,return=minimal'
+      },
+      body: JSON.stringify({ question: question, status: 'pending', source: source || 'chat' })
+    });
+    if (!res.ok) throw new Error('HTTP ' + res.status);
+  }
+
+  /* 把本地队列里的问题尽量发出去；返回成功条数 */
+  async function flush() {
+    if (!ready) return 0;
+    const queue = read(QUEUE_KEY, []);
+    if (!queue.length) return 0;
+
+    const left = [];
+    let done = 0;
+    for (let i = 0; i < queue.length; i++) {
+      const item = queue[i];
+      const q = typeof item === 'string' ? item : item.question;
+      const src = typeof item === 'string' ? 'chat' : (item.source || 'chat');
+      try {
+        await post(q, src);
+        markSent(normKey(q));
+        done++;
+      } catch (e) {
+        left.push(item);
+      }
+    }
+    write(QUEUE_KEY, left);
+    return done;
+  }
+
+  /* 记录一个问题；联网就立刻发，断网就排队等下次 */
+  async function reportGap(question, source) {
+    const q = String(question == null ? '' : question).trim().slice(0, 300);
+    if (q.length < 2) return false;
+
+    const k = normKey(q);
+    if (read(SENT_KEY, []).indexOf(k) !== -1) return true;   /* 本机已报过 */
+    if (isKnown(q)) { markSent(k); return true; }            /* 已经会了 */
+
+    const queue = read(QUEUE_KEY, []);
+    if (!queue.some(function (it) {
+      return normKey(typeof it === 'string' ? it : it.question) === k;
+    })) {
+      queue.push({ question: q, source: source || 'chat' });
+      write(QUEUE_KEY, queue.slice(-MAX_QUEUE));
+    }
+
+    return (await flush()) > 0;
+  }
+
+  /* ---------- 4) 学习：拉取已答好的问答 ---------- */
+  async function loadAnswered() {
+    if (!ready) return window.QA_KNOWLEDGE || [];
+    try {
+      const res = await fetch(
+        BASE + '/rest/v1/' + TABLE +
+        '?select=question,answer&status=eq.answered&order=answered_at.desc&limit=' + MAX_KNOWN,
+        { headers: { apikey: KEY, Authorization: 'Bearer ' + KEY } }
+      );
+      if (!res.ok) throw new Error('HTTP ' + res.status);
+      const rows = await res.json();
+      const list = (rows || [])
+        .filter(function (r) { return r && r.question && r.answer; })
+        .map(function (r) { return { q: r.question, a: r.answer }; });
+      window.QA_KNOWLEDGE = list;
+      write(KNOWN_KEY, list);
+      return list;
+    } catch (e) {
+      /* 断网：保留同步阶段读出来的缓存 */
+      return window.QA_KNOWLEDGE || [];
+    }
+  }
+
+  /* ---------- 5) 初始化 ---------- */
+  function init() {
+    /* 先把缓存里的知识同步读出来，保证这一轮提问就能用上 */
+    window.QA_KNOWLEDGE = read(KNOWN_KEY, []);
+    /* 再后台刷新 + 补发排队的问题；失败静默 */
+    loadAnswered();
+    flush();
+    window.addEventListener('online', function () { flush(); });
+  }
+
+  window.QA = {
+    isUnknown: isUnknown,
+    isKnown: isKnown,
+    knownPairs: knownPairs,
+    reportGap: reportGap,
+    loadAnswered: loadAnswered,
+    flush: flush,
+    queued: function () { return read(QUEUE_KEY, []).length; }
+  };
+
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', init);
+  } else {
+    init();
+  }
+})();
+
 </script>
 <script>/* ./assets/js/feedback.js */
 /* ==========================================================
@@ -3835,6 +4109,39 @@ async function callLLM(userMessage, onChunk, onDone, onError, _isRetry) {
     return row;
   }
 
+  /* ---------- V6：个人档案的离线兜底关键词 ----------
+     每行资料的「label → 可能被问到的词」。放在最前面，
+     因为这些是最具体的事实（生日 / 爱好 / 大学目标）。
+     关键词刻意收窄，避免把「专业」「技能」这类问题也吞掉。 */
+  const PROFILE_KEYS = {
+    '出生日期': ['生日', '出生', '多大', '几岁', '年龄'],
+    '爱好': ['爱好', '兴趣', '喜欢干', '喜欢做'],
+    '以后想一起学的': ['一起学', '想学的', '冲浪', '滑雪', '拳击'],
+    '平时喜欢': ['美食', '游戏', '和平精英'],
+    '大学阶段的目标': ['保研', '科研', '大学阶段']
+  };
+
+  /* ---------- V6：孪生「没学过」的处理 ---------- */
+  const UNKNOWN_REPLY = '这个问题我还没被教过。已经帮你记下来去问本人了，他补上之后我就能回答。';
+
+  /* 「没学过」的暗号可能在流式过程中一个字一个字地到（__UNKNOWN__），
+     只要目前收到的还长得像它的前缀，就先不显示给访客看。 */
+  function looksLikeMarkerPrefix(text) {
+    const t = String(text || '').trim();
+    if (!t || t.length > 14) return false;
+    if (t.charAt(0) === '_') return true;                /* __UNKNOWN__ 开头 */
+    return /^unk/i.test(t) && /^unkn?o?w?n?$/i.test(t);  /* 别名 unknown 只回了一半 */
+  }
+
+  /* 把「答不上来的问题」回报给本人（断网时 QA 模块会先排队） */
+  function reportGap(question, source) {
+    try {
+      if (window.QA && typeof window.QA.reportGap === 'function') {
+        window.QA.reportGap(question, source);
+      }
+    } catch (e) {}
+  }
+
   /* ---------- AI 连不上时的本地兜底 ----------
      数据本来就在页面上（PROFILE_DATA.content），不需要网络。
      按关键词挑最贴近的一段回给访客，答不全但至少不会显示「Load failed」。 */
@@ -3847,6 +4154,15 @@ async function callLLM(userMessage, onChunk, onDone, onError, _isRetry) {
         if (q.indexOf(arguments[i]) !== -1) return true;
       }
       return false;
+    }
+
+    /* 先看个人档案：生日 / 爱好 / 想一起学的 / 平时喜欢 / 大学目标 */
+    const profile = content.profile || [];
+    for (let i = 0; i < profile.length; i++) {
+      const keys = PROFILE_KEYS[profile[i].label];
+      if (keys && hit.apply(null, keys)) {
+        return '他的' + profile[i].label + '：' + profile[i].value + '。';
+      }
     }
 
     if (hit('专业', '学什么', '学校', '大一', '学院')) {
@@ -3932,18 +4248,32 @@ async function callLLM(userMessage, onChunk, onDone, onError, _isRetry) {
         bubble.classList.add('chat__bubble--ai');
 
         let started = false;
+        let shown = '';
 
         callLLM(
           outgoing,
           function (chunk) {
+            shown += chunk;
             if (!started) {
               bubble.innerHTML = '';
               started = true;
             }
-            bubble.textContent += chunk;
+            /* 「没学过」的暗号正在流式到达时，别把它显示给访客 */
+            if (looksLikeMarkerPrefix(shown)) {
+              bubble.innerHTML = '<span class="chat__thinking"><i></i><i></i><i></i></span>';
+            } else {
+              bubble.textContent = shown;
+            }
             stream.scrollTop = stream.scrollHeight;
           },
           function (fullText) {
+            /* V6：孪生承认「没学过」——不把暗号显示出来，换成友好话术，
+               并把这个问题记下来交给本人补答。本人补完它下次就会了。 */
+            if (window.QA && window.QA.isUnknown(fullText)) {
+              bubble.innerHTML = '<span class="chat__unknown">' + escapeHtml(UNKNOWN_REPLY) + '</span>';
+              reportGap(questionText, 'ai_unknown');
+              return;
+            }
             bubble.innerHTML = linkify(fullText);
             cacheSet(questionText, fullText);   /* 存下来，下次网络不好也能直接用 */
           },
@@ -3964,6 +4294,8 @@ async function callLLM(userMessage, onChunk, onDone, onError, _isRetry) {
                      '<br>' + linkify(local);
             } else {
               html = escapeHtml('抱歉，' + errMsg);
+              /* 连本地资料都答不上来，也算一个知识缺口：记下来（断网时先排队） */
+              reportGap(questionText, 'no_answer');
             }
 
             /* 一键重试：网络恢复后不用重新打字 */

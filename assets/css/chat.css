@@ -378,6 +378,14 @@
   opacity: 0.75;
 }
 
+/* V6：孪生没学过的问题 —— 如实说明，并告诉访客已经记下来去问本人 */
+.chat__unknown {
+  display: inline-block;
+  font-size: 13px;
+  line-height: 1.65;
+  opacity: 0.85;
+}
+
 /* 兜底/中断时的操作区：一键重试 */
 .chat__acts {
   margin-top: 8px;

@@ -13,8 +13,23 @@
         '智能医学工程专业大一学生',
         '对 Web 开发、AI 应用和产品设计感兴趣'
       ],
-      stage: '个人主页已迭代到 V5，已上线社区消息搜索与筛选、公告栏'
+      stage: '个人主页已迭代到 V6，已上线公告栏、社区搜索，AI 孪生支持持续训练'
     },
+
+    /* 个人小档案：AI 孪生回答「关于我」时的第一手资料。
+       一行一条，label 是别人可能问到的方向，value 是要点（多个用「、」分隔）。 */
+    profile: [
+      { label: '出生日期', value: '2008 年 1 月 17 日' },
+      { label: '爱好', value: '篮球、健身、拼乐高、折纸' },
+      { label: '以后想一起学的', value: '冲浪、滑雪、拳击' },
+      { label: '平时喜欢', value: '吃美食、打游戏（和平精英）' },
+      { label: '大学阶段的目标', value: '拿到保研名额，增强自己的科研能力' }
+    ],
+
+    /* 本人补录的问答（V6）：访客问到孪生答不上来的问题，我在后台填好答案，
+       就会追加到这里 —— 相当于继续训练孪生，下次别人再问就能答上。
+       格式：{ q: '访客的问题', a: '我的回答' } */
+    qa: [],
 
     /* 技能：一项一行，note 补充程度或场景（可省） */
     skills: [
@@ -29,7 +44,7 @@
     projects: [
       {
         name: '个人主页',
-        desc: '聊天式页面，已迭代到 V5：AI 问答（回答以页面资料为准）、社区注册与发言（头像存云端）、消息实时推送/分页/搜索与筛选、公告栏、反馈入口、手机端适配、单文件版与内容小后台',
+        desc: '聊天式页面，已迭代到 V6：AI 问答（回答以页面资料为准，答不上来会记下来给我补答）、社区注册与发言（头像存云端）、消息实时推送/分页/搜索与筛选、公告栏、反馈入口、手机端适配、单文件版与内容小后台',
         link: 'https://github.com/ZHANGYuchen0117/personal-page'
       },
       { name: '校园小程序', desc: '需求调研与原型' },
@@ -39,7 +54,7 @@
     /* 迭代计划：版本 / 主题 / 具体事项（只写「还没做」的） */
     plan: [
       {
-        version: 'V5',
+        version: 'V6',
         theme: '更好用、更好看',
         items: ['装进桌面：离线可用的 PWA', '多套配色方案', '内容多语言切换']
       }
@@ -66,9 +81,9 @@
       {
         title: '项目进展',
         items: [
-          '个人主页已迭代到 V5：社区消息可以搜索和筛选了',
-          '新增公告栏，打开网页就能看到近况',
-          'V4 已完成：AI 问答、社区注册发言、头像云端存储、消息实时推送、手机端适配',
+          '个人主页已迭代到 V6：AI 孪生可以持续训练了',
+          'V5 已完成：社区消息搜索与筛选、公告栏',
+          'V6 新增：孪生答不上来的问题会记下来，我补答后它立刻学会',
           '接下来：装进桌面（PWA）、多套配色方案、内容多语言切换'
         ]
       },
@@ -108,11 +123,42 @@
   }
 
   /* ---------- 提示词：全部由上面的数据拼出来 ---------- */
-  const RULE = '不要补充未提到的内容。';
+
+  /* 个人档案压成一行（出生日期 / 爱好 / 想一起学的 / 平时喜欢 / 大学目标） */
+  function profileText() {
+    return CONTENT.profile.map(function (p) {
+      return p.label + '：' + p.value;
+    }).join('；');
+  }
+
+  /* 本人补录的问答 = 永久写在 data.js 里的 + 运行时从云端拉到的。
+     只取最近 30 条，避免提示词太长反而把访客的问题挤没了。 */
+  function qaPairs() {
+    const runtime = (typeof window !== 'undefined' && window.QA_KNOWLEDGE) || [];
+    return (CONTENT.qa || []).concat(runtime)
+      .filter(function (x) { return x && x.q && x.a; })
+      .slice(-30);
+  }
+
+  function qaText() {
+    return qaPairs().map(function (x) {
+      return x.q + '→' + x.a;
+    }).join('；');
+  }
+
+  /* 孪生「答不出来」的暗号：后端 AI 遇到资料里没有的问题时只回这个标记，
+     前端识别后不会把它显示出来，而是换成友好话术并回报给本人。
+     见 assets/js/qa.js 与 assets/js/chat.js。 */
+  const UNKNOWN = '__UNKNOWN__';
+
+  const RULE = '不要补充未提到的内容。' +
+    '如果上面的资料里完全没有答案，你的整条回复必须只有这一串字符：' + UNKNOWN +
+    '，不要写任何解释、也不要自己编。';
 
   function aboutPrompt() {
     const facts = CONTENT.about.facts.concat([CONTENT.about.stage]);
-    return '请只依据以下信息，用2-3句话介绍' + NAME + '：' + facts.join('，') + '。' + RULE;
+    return '请只依据以下信息，用2-3句话介绍' + NAME + '：' + facts.join('，') +
+      '。个人档案：' + profileText() + '。' + RULE;
   }
 
   function skillsPrompt() {
@@ -159,13 +205,17 @@
       return stage.version + ' ' + stage.theme + '（' + stage.items.join('、') + '）';
     }).join('；');
 
+    const qa = qaText();
+
     return '请只依据以下信息回答访客的问题，用2-3句话，语气自然。' + RULE + '\n' +
       '姓名：' + NAME + '\n' +
       '关于：' + facts.join('，') + '\n' +
+      '个人档案：' + profileText() + '\n' +
       '技能：' + skills + '\n' +
       '项目：' + projects + '\n' +
       '接下来：' + plan + '\n' +
       '最新公告：' + announcementText() + '\n' +
+      (qa ? '已知问答：' + qa + '\n' : '') +
       '联系方式：页面上的「联系我」里有微信二维码，扫码即可加好友。\n' +
       '访客的问题：' + question;
   }
@@ -177,8 +227,11 @@
        如果文件不存在，会自动回退到内置矢量图标 */
     avatar: './assets/img/avatar.jpg',
 
-    /* 内容数据（V3）：关于我 / 技能 / 项目 / 计划 */
+    /* 内容数据（V3）：关于我 / 个人档案 / 技能 / 项目 / 计划 / 补录问答 */
     content: CONTENT,
+
+    /* AI 孪生「答不出来」的暗号（V6）：前端识别到它就不显示，改成友好话术并回报本人 */
+    unknownToken: UNKNOWN,
 
     /* 给自由输入的问题补上页面资料（菜单按钮自己有完整 prompt，不走这里） */
     questionPrompt: questionPrompt,
@@ -217,8 +270,8 @@
     },
 
     changelog: {
-      date: '2026年9月',
-      version: 'V5',
+      date: '2026年10月',
+      version: 'V6',
       groups: [
         {
           title: '已完成',
@@ -245,7 +298,9 @@
             { text: 'V4 部署与分享优化：分享卡片、图标、站点地图、404 指引', done: true },
             { text: 'AI 问答更稳更准：偶发断线自动重试，回答一律以页面资料为准，真连不上就用本地资料兜底', done: true },
             { text: 'V5 社区消息搜索与筛选：按内容或昵称搜索，可只看自己的消息', done: true },
-            { text: 'V5 公告栏：打开网页自动弹出，项目 / 篮球 / 健身 / 学习一屏看完', done: true }
+            { text: 'V5 公告栏：打开网页自动弹出，项目 / 篮球 / 健身 / 学习一屏看完', done: true },
+            { text: 'V6 训练 AI 孪生：录入生日 / 爱好 / 想一起学的 / 平时喜欢 / 大学目标，聊天框里问就能答', done: true },
+            { text: 'V6 答不上来就回报：孪生遇到没学过的问题会记下来，我在后台补答后它立刻学会', done: true }
           ]
         },
         {

@@ -138,6 +138,15 @@
   </section>
 
   <section>
+    <h2>个人档案（喂给 AI 孪生）</h2>
+    <p class="hint" style="margin:0">一行一条，写成「标签：内容」。别人在聊天框里问生日、爱好、大学目标这类问题，孪生就用这里的内容回答。</p>
+    <div class="field">
+      <label for="profileList">档案（一行一条）</label>
+      <textarea class="txt" id="profileList" rows="6"></textarea>
+    </div>
+  </section>
+
+  <section>
     <h2>技能</h2>
     <div id="skillList" style="display:flex;flex-direction:column;gap:8px"></div>
     <div class="bar"><button type="button" id="addSkill">+ 加一项技能</button></div>
@@ -179,6 +188,24 @@
   </section>
 
   <section>
+    <h2>AI 孪生 · 待我回答的问题</h2>
+    <p class="hint" style="margin:0">
+      访客问过、但孪生答不上来的问题会汇总在这里。填好答案点「保存答案」，网站立刻就能用它回答；
+      答案同时会写进下面生成的 data.js，成为永久的训练文本。
+    </p>
+    <div class="field">
+      <label for="qaPass">本人口令（在 Supabase 的 SQL Editor 里设过一次；只存在本机浏览器，不会进仓库）</label>
+      <input class="txt" type="password" id="qaPass" autocomplete="new-password" placeholder="口令">
+    </div>
+    <div class="bar">
+      <button type="button" class="primary" id="qaLoad">拉取待答问题</button>
+      <button type="button" id="qaForget">忘掉本机口令</button>
+    </div>
+    <p id="qaStatus" class="hint" style="margin:0"></p>
+    <div id="qaList" style="display:flex;flex-direction:column;gap:10px"></div>
+  </section>
+
+  <section>
     <h2>生成</h2>
     <div class="bar">
       <button type="button" class="primary" id="generate">生成 data.js</button>
@@ -194,6 +221,7 @@
 </div>
 
 <script src="./assets/js/data.js"></script>
+<script src="./assets/js/supabase-config.js"></script>
 <script src="./assets/js/admin.js"></script>
 </body>
 </html>

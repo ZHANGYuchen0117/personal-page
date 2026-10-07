@@ -11,6 +11,8 @@
   content.skills = content.skills || [];
   content.projects = content.projects || [];
   content.plan = content.plan || [];
+  content.profile = content.profile || [];   /* V6：个人档案（喂给孪生） */
+  content.qa = content.qa || [];             /* V6：本人补录的问答（训练文本） */
 
   const NAME = base.name || '张聿辰';
 
@@ -25,6 +27,13 @@
   function renderAbout() {
     el('aboutFacts').value = (content.about.facts || []).join('\n');
     el('aboutStage').value = content.about.stage || '';
+  }
+
+  /* V6：个人档案 —— 「标签：内容」一行一条，共 5 条 */
+  function renderProfile() {
+    el('profileList').value = (content.profile || []).map(function (p) {
+      return p.label + '：' + p.value;
+    }).join('\n');
   }
 
   function renderSkills() {
@@ -66,6 +75,7 @@
 
   function renderAll() {
     renderAbout();
+    renderProfile();
     renderSkills();
     renderProjects();
     renderPlan();
@@ -78,6 +88,15 @@
     content.about.facts = el('aboutFacts').value.split('\n')
       .map(s => s.trim()).filter(Boolean);
     content.about.stage = el('aboutStage').value.trim();
+
+    /* 个人档案：「标签：内容」，中英文冒号都认 */
+    content.profile = el('profileList').value.split('\n').map(function (line) {
+      const t = line.trim();
+      if (!t) return null;
+      const m = t.match(/^([^：:]+)[：:]\s*(.*)$/);
+      if (m) return { label: m[1].trim(), value: m[2].trim() };
+      return { label: t, value: '' };
+    }).filter(function (p) { return p && p.label; });
 
     content.skills = Array.prototype.map.call(el('skillList').querySelectorAll('.row'), function (row) {
       return {
@@ -97,7 +116,7 @@
 
     const items = el('planItems').value.split('\n').map(s => s.trim()).filter(Boolean);
     content.plan = [{
-      version: el('planVersion').value.trim() || 'V5',
+      version: el('planVersion').value.trim() || 'V6',
       theme: el('planTheme').value.trim() || '下一步',
       items: items
     }];
@@ -120,8 +139,8 @@
 
     return [
       '/* ==========================================================',
-      ' * 个人主页数据（V4：内容数据化）',
-      ' * 关于我 / 技能 / 项目 都写在 content 里，',
+      ' * 个人主页数据（V6：内容数据化 + AI 孪生持续训练）',
+      ' * 关于我 / 个人档案 / 技能 / 项目 / 补录问答 都写在 content 里，',
       ' * AI 提示词由这份数据自动拼出来 —— 改这里就改全站口径。',
       ' * 这份文件可以用 admin.html 生成，也可以直接手改。',
       ' * ========================================================== */',
@@ -142,11 +161,41 @@
       '  }',
       '',
       "  /* ---------- 提示词：全部由上面的数据拼出来 ---------- */",
-      "  const RULE = '不要补充未提到的内容。';",
+      '',
+      '  /* 个人档案压成一行（出生日期 / 爱好 / 想一起学的 / 平时喜欢 / 大学目标） */',
+      '  function profileText() {',
+      '    return CONTENT.profile.map(function (p) {',
+      "      return p.label + '：' + p.value;",
+      "    }).join('；');",
+      '  }',
+      '',
+      '  /* 本人补录的问答 = 永久写在 data.js 里的 + 运行时从云端拉到的。',
+      '     只取最近 30 条，避免提示词太长反而把访客的问题挤没了。 */',
+      '  function qaPairs() {',
+      "    const runtime = (typeof window !== 'undefined' && window.QA_KNOWLEDGE) || [];",
+      '    return (CONTENT.qa || []).concat(runtime)',
+      '      .filter(function (x) { return x && x.q && x.a; })',
+      '      .slice(-30);',
+      '  }',
+      '',
+      '  function qaText() {',
+      '    return qaPairs().map(function (x) {',
+      "      return x.q + '→' + x.a;",
+      "    }).join('；');",
+      '  }',
+      '',
+      '  /* 孪生「答不出来」的暗号（V6）：前端识别到它就不显示，',
+      '     改成友好话术并回报给本人。见 assets/js/qa.js 与 chat.js。 */',
+      "  const UNKNOWN = '__UNKNOWN__';",
+      '',
+      "  const RULE = '不要补充未提到的内容。' +",
+      "    '如果上面的资料里完全没有答案，你的整条回复必须只有这一串字符：' + UNKNOWN +",
+      "    '，不要写任何解释、也不要自己编。';",
       '',
       '  function aboutPrompt() {',
       '    const facts = CONTENT.about.facts.concat([CONTENT.about.stage]);',
-      "    return '请只依据以下信息，用2-3句话介绍' + NAME + '：' + facts.join('，') + '。' + RULE;",
+      "    return '请只依据以下信息，用2-3句话介绍' + NAME + '：' + facts.join('，') +",
+      "      '。个人档案：' + profileText() + '。' + RULE;",
       '  }',
       '',
       '  function skillsPrompt() {',
@@ -189,14 +238,17 @@
       '    const plan = CONTENT.plan.map(function (stage) {',
       "      return stage.version + ' ' + stage.theme + '（' + stage.items.join('、') + '）';",
       "    }).join('；');",
+      '    const qa = qaText();',
       '',
       "    return '请只依据以下信息回答访客的问题，用2-3句话，语气自然。' + RULE + '\\n' +",
       "      '姓名：' + NAME + '\\n' +",
       "      '关于：' + facts.join('，') + '\\n' +",
+      "      '个人档案：' + profileText() + '\\n' +",
       "      '技能：' + skills + '\\n' +",
       "      '项目：' + projects + '\\n' +",
       "      '接下来：' + plan + '\\n' +",
       "      '最新公告：' + announcementText() + '\\n' +",
+      "      (qa ? '已知问答：' + qa + '\\n' : '') +",
       "      '联系方式：页面上的「联系我」里有微信二维码，扫码即可加好友。\\n' +",
       "      '访客的问题：' + question;",
       '  }',
@@ -207,8 +259,11 @@
       '    /* 头像：把真实照片放在 assets/img/avatar.jpg */',
       '    avatar: ' + JSON.stringify(base.avatar || './assets/img/avatar.jpg') + ',',
       '',
-      '    /* 内容数据（V4）：关于我 / 技能 / 项目 / 计划 */',
+      '    /* 内容数据（V6）：关于我 / 个人档案 / 技能 / 项目 / 计划 / 补录问答 */',
       '    content: CONTENT,',
+      '',
+      '    /* AI 孪生「答不出来」的暗号（V6）：前端识别到就不显示，改成友好话术 */',
+      '    unknownToken: UNKNOWN,',
       '',
       '    /* 给自由输入的问题补上页面资料（菜单按钮自己有完整 prompt，不走这里） */',
       '    questionPrompt: questionPrompt,',
@@ -322,6 +377,156 @@
   el('previewBtn').addEventListener('click', function () {
     el('preview').textContent = JSON.stringify(collect(), null, 2);
   });
+
+  /* ==========================================================
+   * V6：AI 孪生「待我回答的问题」
+   *  1. 持本人口令，从云端拉出访客问过、但孪生答不上来的问题
+   *  2. 填好答案保存 → 写回云端，网站立刻就能用它回答
+   *  3. 同时追加到 content.qa → 一起写进生成的 data.js（永久训练文本）
+   * 口令只存在本机 localStorage，不进仓库、不进生成的文件。
+   * ========================================================== */
+  const SB = window.SUPABASE_CONFIG || {};
+  const PASS_KEY = 'qa_pass';
+  let gaps = [];
+
+  function normQ(s) {
+    return String(s == null ? '' : s).trim().toLowerCase().replace(/\s+/g, ' ');
+  }
+
+  function readPass() {
+    try { return localStorage.getItem(PASS_KEY) || ''; } catch (e) { return ''; }
+  }
+
+  function setQaStatus(msg, isErr) {
+    const n = el('qaStatus');
+    n.textContent = msg;
+    n.style.color = isErr ? '#c0392b' : '';
+  }
+
+  async function rpc(name, body) {
+    if (!SB.url || !SB.anonKey) throw new Error('没读到 Supabase 配置');
+    const res = await fetch(SB.url + '/rest/v1/rpc/' + name, {
+      method: 'POST',
+      headers: {
+        apikey: SB.anonKey,
+        Authorization: 'Bearer ' + SB.anonKey,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify(body)
+    });
+    const text = await res.text();
+    if (!res.ok) {
+      let msg = 'HTTP ' + res.status;
+      try {
+        const j = JSON.parse(text);
+        msg = j.message || j.hint || j.details || msg;
+      } catch (e) {}
+      throw new Error(msg);
+    }
+    return text ? JSON.parse(text) : null;
+  }
+
+  function renderGaps() {
+    const box = el('qaList');
+    if (!gaps.length) {
+      box.innerHTML = '<p class="hint" style="margin:0">现在没有待答的问题。</p>';
+      return;
+    }
+    box.innerHTML = gaps.map(function (g, i) {
+      let when = '';
+      try { when = g.created_at ? new Date(g.created_at).toLocaleString('zh-CN') : ''; } catch (e) {}
+      return '<div class="card" data-i="' + i + '">' +
+        '<p class="hint" style="margin:0 0 6px">' + esc(when) + '</p>' +
+        '<p class="q" style="margin:0 0 8px;font-weight:600">' + esc(g.question) + '</p>' +
+        '<textarea class="txt ans" rows="3" placeholder="你的回答（1 - 2000 字）"></textarea>' +
+        '<div class="bar">' +
+          '<button type="button" class="primary" data-save="' + i + '">保存答案</button>' +
+          '<button type="button" data-drop="' + i + '">先跳过</button>' +
+        '</div>' +
+        '</div>';
+    }).join('');
+  }
+
+  el('qaLoad').addEventListener('click', async function () {
+    const pass = (el('qaPass').value || '').trim() || readPass();
+    if (!pass) {
+      setQaStatus('先填本人口令（在 Supabase 的 SQL Editor 里设过的那串）', true);
+      el('qaPass').focus();
+      return;
+    }
+    try { localStorage.setItem(PASS_KEY, pass); } catch (e) {}
+
+    setQaStatus('拉取中…');
+    try {
+      const rows = await rpc('list_gaps', { pass: pass, limit_n: 100 });
+      const known = (content.qa || []).map(function (x) { return normQ(x.q); });
+      gaps = (rows || []).map(function (r) {
+        return { id: r.id, question: r.question, created_at: r.created_at };
+      }).filter(function (g) {
+        return known.indexOf(normQ(g.question)) === -1;   /* 已经写进训练文本的就不显示了 */
+      });
+      renderGaps();
+      setQaStatus(gaps.length ? ('有 ' + gaps.length + ' 个问题等你回答') : '没有待答的问题，挺好的。');
+    } catch (err) {
+      setQaStatus('拉取失败：' + err.message, true);
+    }
+  });
+
+  el('qaForget').addEventListener('click', function () {
+    try { localStorage.removeItem(PASS_KEY); } catch (e) {}
+    el('qaPass').value = '';
+    setQaStatus('已忘掉本机保存的口令');
+  });
+
+  el('qaList').addEventListener('click', async function (e) {
+    const saveI = e.target.getAttribute && e.target.getAttribute('data-save');
+    const dropI = e.target.getAttribute && e.target.getAttribute('data-drop');
+
+    if (dropI !== null && dropI !== undefined) {
+      gaps.splice(Number(dropI), 1);
+      renderGaps();
+      setQaStatus('已跳过（下次拉取还会出现）');
+      return;
+    }
+    if (saveI === null || saveI === undefined) return;
+
+    const i = Number(saveI);
+    const gap = gaps[i];
+    if (!gap) return;
+
+    const card = e.target.closest ? e.target.closest('.card') : null;
+    const ansEl = card ? card.querySelector('.ans') : null;
+    const answer = ansEl ? ansEl.value.trim() : '';
+    const pass = (el('qaPass').value || '').trim() || readPass();
+
+    if (!answer) { setQaStatus('答案还没写', true); return; }
+    if (!pass) { setQaStatus('先填本人口令', true); return; }
+
+    e.target.disabled = true;
+    setQaStatus('保存中…');
+    try {
+      const ok = await rpc('answer_gap', { gap_id: gap.id, answer: answer, pass: pass });
+      if (ok === false) throw new Error('这条已经不在了（可能已经被回答过）');
+
+      /* 追加进训练文本，生成 data.js 时会带上 */
+      content.qa = content.qa || [];
+      if (!content.qa.some(function (x) { return normQ(x.q) === normQ(gap.question); })) {
+        content.qa.push({ q: gap.question, a: answer });
+      }
+      gaps.splice(i, 1);
+      renderGaps();
+      el('preview').textContent = JSON.stringify(collect(), null, 2);
+      setQaStatus('已保存：网站立刻就能用它回答。别忘了点「生成 data.js」→ 下载覆盖 assets/js/data.js，' +
+        '这样它才会成为永久的训练文本（并提交到仓库）。');
+    } catch (err) {
+      e.target.disabled = false;
+      setQaStatus('保存失败：' + err.message, true);
+    }
+  });
+
+  /* 打开页面时把本机存过的口令填回去（不自动拉取，避免一进来就发请求） */
+  el('qaPass').value = readPass();
+  renderGaps();
 
   renderAll();
 })();
