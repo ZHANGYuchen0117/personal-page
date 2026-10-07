@@ -1,0 +1,235 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<meta name="robots" content="noindex, nofollow" />
+<title>AI 孪生 · 功能自检</title>
+<style>
+  :root { color-scheme: light dark; }
+  * { box-sizing: border-box; }
+  body { margin: 0; padding: 20px; font: 15px/1.6 -apple-system, "PingFang SC", "Microsoft YaHei", sans-serif; background: #f5f5f7; color: #1d1d1f; }
+  h1 { font-size: 20px; margin: 0 0 6px; }
+  p.lead { margin: 0 0 16px; color: #555; }
+  .card { background: #fff; border-radius: 12px; padding: 14px 16px; margin: 0 0 12px; box-shadow: 0 1px 3px rgba(0,0,0,.08); }
+  .card h2 { font-size: 15px; margin: 0 0 8px; display: flex; align-items: center; gap: 8px; }
+  .num { display: inline-flex; width: 22px; height: 22px; border-radius: 50%; background: #07c160; color: #fff; font-size: 13px; align-items: center; justify-content: center; flex: none; }
+  button { font: inherit; padding: 8px 14px; border: 0; border-radius: 9px; background: #07c160; color: #fff; cursor: pointer; }
+  button:disabled { opacity: .5; cursor: default; }
+  input { font: inherit; padding: 7px 10px; border: 1px solid #d2d2d7; border-radius: 8px; width: 100%; max-width: 320px; margin: 0 0 8px; }
+  pre { margin: 8px 0 0; padding: 10px; background: #1d1d1f; color: #e6e6e6; border-radius: 8px; font-size: 12px; line-height: 1.55; white-space: pre-wrap; word-break: break-all; max-height: 300px; overflow: auto; }
+  .hint { color: #86868b; font-size: 12.5px; margin: 6px 0 0; }
+  .ok { color: #07c160; font-weight: 600; }
+  .bad { color: #e53935; font-weight: 600; }
+  .warn { color: #b26a00; font-weight: 600; }
+  code { background: #eee; padding: 1px 5px; border-radius: 5px; font-size: 12.5px; }
+</style>
+</head>
+<body>
+  <h1>AI 孪生 · 功能自检</h1>
+  <p class="lead">
+    依次点 ①②③④⑤，把每步的结果发我，就能定位「后台为什么看不到问题」。<br />
+    <strong>重要：请用你问那两个问题时的<u>同一个浏览器</u>、打开<u>同一个网址</u>来跑这个页面</strong>（这样才能读到当时的记录）。
+  </p>
+
+  <div class="card">
+    <h2><span class="num">0</span>当前环境</h2>
+    <pre id="out0">检测中…</pre>
+  </div>
+
+  <div class="card">
+    <h2><span class="num">1</span>后端配置是否读到</h2>
+    <pre id="out1">检测中…</pre>
+    <p class="hint">如果这里显示「没读到」，说明 <code>supabase-config.js</code> 没加载成功，前端根本不会上报。</p>
+  </div>
+
+  <div class="card">
+    <h2><span class="num">2</span>匿名写入测试（访客上报走的就是这条路）</h2>
+    <button id="btn2">点这里，写一条测试问题</button>
+    <pre id="out2">—</pre>
+    <p class="hint">
+      会往 <code>qa_gaps</code> 表插一条「【自检】…」。<br />
+      报错 <code>42P01 / relation does not exist</code> = SQL 还没执行；<code>42501 / row-level security</code> = 权限脚本没生效。<br />
+      测完可以删掉：<code>delete from public.qa_gaps where question like '【自检】%';</code>
+    </p>
+  </div>
+
+  <div class="card">
+    <h2><span class="num">3</span>匿名读取已答问答（孪生「学习」走的路）</h2>
+    <button id="btn3">点这里，读一下</button>
+    <pre id="out3">—</pre>
+    <p class="hint">访客身份只能读到「已经答好」的。返回 <code>[]</code> 是正常的（还没答过任何问题）。</p>
+  </div>
+
+  <div class="card">
+    <h2><span class="num">4</span>持本人口令拉取「待我回答的问题」（后台面板走的路）</h2>
+    <input id="pass" type="password" placeholder="填你设的本人口令" autocomplete="off" />
+    <button id="btn4">点这里，拉取</button>
+    <pre id="out4">—</pre>
+    <p class="hint">如果这里能正常返回数组，说明后台那条路是通的 —— 那问题就只在「记录没写进去」。</p>
+  </div>
+
+  <div class="card">
+    <h2><span class="num">5</span>本机记录（最关键的一步）</h2>
+    <button id="btn5">点这里，看本机存了什么</button>
+    <pre id="out5">—</pre>
+    <p class="hint">
+      <code>待上报(排队)</code> 有数据 = 上报试过但失败了；<br />
+      <code>本机已上报过</code> 有数据 = 前端认为发成功了；<br />
+      两个都是空 = <strong>当时根本没触发上报</strong>（多半是当时用的是旧版页面，或 AI 其实答上来了）。
+    </p>
+  </div>
+
+<script src="./assets/js/supabase-config.js"></script>
+<script>
+(function () {
+  var cfg = window.SUPABASE_CONFIG || {};
+  var BASE = cfg.url || '';
+  var KEY = cfg.anonKey || '';
+  var TEST_Q = '【自检】这是一条自检页写入的测试问题';
+
+  function el(id) { return document.getElementById(id); }
+  function esc(s) {
+    return String(s == null ? '' : s)
+      .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+  }
+  function line(cls, txt) {
+    return '<span class="' + cls + '">' + esc(txt) + '</span>';
+  }
+  function show(id, html) { el(id).innerHTML = html; }
+
+  /* 0. 环境 */
+  (function () {
+    var now = new Date();
+    var tz = 'UTC' + (now.getTimezoneOffset() <= 0 ? '+' : '-') + Math.abs(now.getTimezoneOffset() / 60);
+    show('out0',
+      '页面地址: ' + location.href + '\n' +
+      '网站域(origin): ' + location.origin + '\n' +
+      '本地时间: ' + now.toLocaleString('zh-CN') + ' (' + tz + ')\n' +
+      '浏览器: ' + navigator.userAgent);
+  })();
+
+  /* 1. 配置 */
+  (function () {
+    if (!BASE || !KEY) {
+      show('out1', line('bad', '✗ 没读到后端配置（SUPABASE_CONFIG 为空）') +
+        '\n=== window.SUPABASE_CONFIG ===\n' + esc(JSON.stringify(cfg, null, 2)));
+      return;
+    }
+    show('out1', line('ok', '✓ 配置已加载') + '\n' +
+      'url          : ' + esc(BASE) + '\n' +
+      'anonKey 前 12 : ' + esc(KEY.slice(0, 12)) + '…（共 ' + KEY.length + ' 字符）');
+  })();
+
+  /* 2. 匿名写入 */
+  el('btn2').addEventListener('click', async function () {
+    if (!BASE || !KEY) { show('out2', line('bad', '✗ 没有后端配置，无法测试')); return; }
+    show('out2', '请求中…');
+    var url = BASE + '/rest/v1/qa_gaps?on_conflict=question_key';
+    try {
+      var res = await fetch(url, {
+        method: 'POST',
+        headers: {
+          apikey: KEY,
+          Authorization: 'Bearer ' + KEY,
+          'Content-Type': 'application/json',
+          Prefer: 'resolution=ignore-duplicates,return=minimal'
+        },
+        body: JSON.stringify({ question: TEST_Q, status: 'pending', source: 'no_answer' })
+      });
+      var text = await res.text();
+      var head = res.ok
+        ? line('ok', '✓ HTTP ' + res.status + ' —— 写入成功（表存在、权限正常）')
+        : line('bad', '✗ HTTP ' + res.status + ' —— 写入失败');
+      show('out2', head + '\n返回体: ' + (text ? esc(text) : '(空，正常)') +
+        '\n\n请求: ' + esc(url));
+    } catch (e) {
+      show('out2', line('bad', '✗ 网络层就失败了（连不上 Supabase 或跨域被挡）') +
+        '\n' + esc(String(e && e.message || e)) + '\n\n请求: ' + esc(url));
+    }
+  });
+
+  /* 3. 匿名读取已答 */
+  el('btn3').addEventListener('click', async function () {
+    if (!BASE || !KEY) { show('out3', line('bad', '✗ 没有后端配置，无法测试')); return; }
+    show('out3', '请求中…');
+    var url = BASE + '/rest/v1/qa_gaps?select=question,answer&status=eq.answered&limit=5';
+    try {
+      var res = await fetch(url, { headers: { apikey: KEY, Authorization: 'Bearer ' + KEY } });
+      var text = await res.text();
+      var head = res.ok
+        ? line('ok', '✓ HTTP ' + res.status)
+        : line('bad', '✗ HTTP ' + res.status);
+      show('out3', head + '\n返回体: ' + esc(text) + '\n\n请求: ' + esc(url));
+    } catch (e) {
+      show('out3', line('bad', '✗ 网络层失败') + '\n' + esc(String(e && e.message || e)));
+    }
+  });
+
+  /* 4. RPC 拉取待答 */
+  el('btn4').addEventListener('click', async function () {
+    if (!BASE || !KEY) { show('out4', line('bad', '✗ 没有后端配置，无法测试')); return; }
+    var pass = (el('pass').value || '').trim();
+    if (!pass) { show('out4', line('warn', '先在上面填口令')); return; }
+    show('out4', '请求中…');
+    var url = BASE + '/rest/v1/rpc/list_gaps';
+    try {
+      var res = await fetch(url, {
+        method: 'POST',
+        headers: {
+          apikey: KEY,
+          Authorization: 'Bearer ' + KEY,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ pass: pass, limit_n: 100 })
+      });
+      var text = await res.text();
+      var head;
+      if (res.ok) {
+        var n = 0;
+        try { n = JSON.parse(text).length; } catch (e2) {}
+        head = line(n > 0 ? 'ok' : 'warn', '✓ HTTP ' + res.status + ' —— 拉到 ' + n + ' 条待答问题');
+      } else {
+        head = line('bad', '✗ HTTP ' + res.status + ' —— 口令不对 / 函数不存在 / 权限没配');
+      }
+      show('out4', head + '\n返回体: ' + esc(text) + '\n\n请求: ' + esc(url));
+    } catch (e) {
+      show('out4', line('bad', '✗ 网络层失败') + '\n' + esc(String(e && e.message || e)));
+    }
+  });
+
+  /* 5. 本机记录 */
+  el('btn5').addEventListener('click', function () {
+    function get(k) {
+      try { return localStorage.getItem(k); } catch (e) { return null; }
+    }
+    var out = [];
+    [['qa_gap_queue_v1', '待上报(排队)'],
+     ['qa_sent_v1', '本机已上报过'],
+     ['qa_known_v1', '已学会(缓存)'],
+     ['qa_pass', '本机记住的后台口令']].forEach(function (p) {
+      var raw = get(p[0]);
+      var pretty = raw;
+      if (p[0] !== 'qa_pass' && raw) {
+        try {
+          var v = JSON.parse(raw);
+          if (Array.isArray(v)) {
+            pretty = v.map(function (x) {
+              if (x && typeof x === 'object') return '· [' + (x.source || '?') + '] ' + (x.question || '');
+              return '· ' + x;
+            }).join('\n') + '\n（共 ' + v.length + ' 条）';
+          }
+        } catch (e) {}
+      }
+      if (p[0] === 'qa_pass') pretty = raw ? '（已存，' + raw.length + ' 字符）' : null;
+      out.push('【' + p[1] + '】' + (raw == null ? ' 空' : '\n' + pretty));
+    });
+    show('out5', out.join('\n\n'));
+  });
+
+  /* 顺手自动跑一下第 5 步，省得用户忘 */
+  el('btn5').click();
+})();
+</script>
+</body>
+</html>
