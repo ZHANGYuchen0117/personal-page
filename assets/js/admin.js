@@ -116,7 +116,7 @@
 
     const items = el('planItems').value.split('\n').map(s => s.trim()).filter(Boolean);
     content.plan = [{
-      version: el('planVersion').value.trim() || 'V6',
+      version: el('planVersion').value.trim() || 'V7',
       theme: el('planTheme').value.trim() || '下一步',
       items: items
     }];
@@ -139,7 +139,7 @@
 
     return [
       '/* ==========================================================',
-      ' * 个人主页数据（V6：内容数据化 + AI 孪生持续训练）',
+      ' * 个人主页数据（V7：内容数据化 + AI 孪生持续训练 + 社区记录保留）',
       ' * 关于我 / 个人档案 / 技能 / 项目 / 补录问答 都写在 content 里，',
       ' * AI 提示词由这份数据自动拼出来 —— 改这里就改全站口径。',
       ' * 这份文件可以用 admin.html 生成，也可以直接手改。',

@@ -48,6 +48,16 @@
   const PAGE_SIZE = 20;          // 每页消息数
   const AVATAR_BUCKET = 'avatars';
 
+  /* V7 本地快照：把最近一次拉到的发言存在本机，重新打开社区时先显示出来。
+     为什么要它：消息一直是打开社区时现从云端拉的，一旦云连不上（或者刚打开
+     还没加载完）社区就是一片空白，看起来像「聊天记录丢了」。
+     只保留最近一次的快照、最多 CACHE_MAX 条，不做历史累积。 */
+  const CACHE_KEY = 'community_cache_v1';
+  const CACHE_MAX = 30;
+
+  /* 当前列表里有哪几条消息（有序），存快照时直接用它 */
+  let snapshot = [];
+
   let currentUser = null;
   let pendingAvatar = null;      // { dataUrl, blob }
   let seenIds = new Set();
@@ -99,6 +109,20 @@
   refreshHint.hidden = true;
   refreshHint.textContent = '下拉刷新';
   listEl.insertBefore(refreshHint, listEl.firstChild);
+
+  /* V7：正在显示本地快照时的提示条（拿到云端数据后收起） */
+  const cacheNote = document.createElement('div');
+  cacheNote.className = 'community__cache-note';
+  cacheNote.hidden = true;
+  listEl.insertBefore(cacheNote, refreshHint.nextSibling);
+
+  function showCacheNote(text) {
+    cacheNote.textContent = text;
+    cacheNote.hidden = false;
+  }
+  function hideCacheNote() {
+    cacheNote.hidden = true;
+  }
 
   let pullStartY = null;
   let pullDy = 0;
@@ -211,6 +235,55 @@
     } catch (e) {}
   }
 
+  /* ---------- V7 本地快照 ---------- */
+
+  /* 存一条「缩过水」的消息：头像可能是个很大的内嵌 data URI（早期用户），
+     几十条就能把 localStorage 撑爆，所以快照里只留 http(s) 头像，其它落回默认头像 */
+  function slim(m) {
+    const a = m && m.avatar;
+    return {
+      id: m.id,
+      user_id: m.user_id,
+      nickname: m.nickname,
+      content: m.content,
+      created_at: m.created_at,
+      avatar: (typeof a === 'string' && /^https?:/i.test(a)) ? a : null
+    };
+  }
+
+  function saveCache() {
+    if (!snapshot.length) return;
+    /* 按时间排序后再取最后 N 条：不管列表是正序还是倒序渲染，
+       留下的都一定是"最近的"那几条 */
+    function recent(rows, n) {
+      return rows.slice().sort(function (a, b) {
+        return String(a.created_at) < String(b.created_at) ? -1 : 1;
+      }).slice(-n).map(slim);
+    }
+    try {
+      localStorage.setItem(CACHE_KEY,
+        JSON.stringify({ at: Date.now(), rows: recent(snapshot, CACHE_MAX) }));
+    } catch (e) {
+      /* 配额满 / 隐私模式：先把旧快照清掉、再退到更少条数试一次，还不行就放弃，
+         不能影响正常使用 */
+      try {
+        localStorage.removeItem(CACHE_KEY);
+        localStorage.setItem(CACHE_KEY,
+          JSON.stringify({ at: Date.now(), rows: recent(snapshot, 10) }));
+      } catch (e2) {}
+    }
+  }
+
+  function loadCache() {
+    try {
+      const raw = localStorage.getItem(CACHE_KEY);
+      if (!raw) return null;
+      const box = JSON.parse(raw);
+      if (box && Array.isArray(box.rows) && box.rows.length) return box;
+    } catch (e) {}
+    return null;
+  }
+
   function updateUI() {
     if (currentUser) {
       guestEl.hidden = true;
@@ -282,6 +355,10 @@
 
     if (prepend) listEl.insertBefore(row, moreBtn.nextSibling);
     else listEl.appendChild(row);
+
+    /* V7：维护快照顺序（= 列表顺序），存本地用 */
+    if (prepend) snapshot.unshift(msg);
+    else snapshot.push(msg);
 
     applyFilter();   /* V5：新到的消息也要按当前搜索 / 筛选条件处理 */
     return row;
@@ -451,6 +528,7 @@
       updateMoreBtn();
     }
     scrollToBottom();
+    saveCache();   /* V7：首屏拿到就把本地快照更新掉 */
   }
 
   /* 向上翻页：加载更早的消息 */
@@ -478,6 +556,7 @@
       hasMore = more;
       // 新内容加在顶部：补偿滚动位置，视觉上不跳动
       programScroll(function () { listEl.scrollTop = prevTop + (listEl.scrollHeight - prevHeight); });
+      saveCache();   /* V7 */
     } catch (e) {
       console.error('[community]', e);
     } finally {
@@ -499,6 +578,7 @@
     rows.forEach(function (m) { renderMessage(m); });
     lastTime = rows[rows.length - 1].created_at;
     if (stick) scrollToBottom();
+    saveCache();   /* V7 */
   }
 
   /* ---------- 实时推送（Supabase Realtime，WebSocket 直连） ---------- */
@@ -523,6 +603,7 @@
       lastTime = rec.created_at;
     }
     if (stick) scrollToBottom();
+    saveCache();   /* V7 */
   }
 
   function startRealtime() {
@@ -654,6 +735,7 @@
         renderMessage(rows[0]);
         lastTime = rows[0].created_at;
         scrollToBottom();
+        saveCache();   /* V7：自己刚发的那条也要进快照 */
       }
     } catch (e) {
       statusEl.textContent = '发送失败，请稍后再试';
@@ -671,11 +753,34 @@
     isOpen = true;
     updateUI();
 
+    /* V7：先把本机快照显示出来 —— 断网、或云端还没加载完时，
+       也能看到上次的发言（自己的和别人的） */
+    if (!loadedOnce) {
+      const box = loadCache();
+      if (box) {
+        box.rows.forEach(function (m) { renderMessage(m); });
+        if (box.rows.length) {
+          scrollToBottom();
+          showCacheNote('以下是你上次看到的内容，正在更新…');
+        }
+      }
+    }
+
     const firstLoad = loadedOnce
       ? fetchNew()
-      : loadInitial().then(function () { loadedOnce = true; });
+      : loadInitial().then(function () {
+          loadedOnce = true;
+          hideCacheNote();
+        });
     /* V3：加载完成后恢复上次的滚动位置 */
-    firstLoad.then(restoreListScroll).catch(function (e) { console.error('[community]', e); });
+    firstLoad.then(restoreListScroll).catch(function (e) {
+      console.error('[community]', e);
+      /* V7：云端连不上时把话说明白，别让人以为记录丢了 */
+      const hasCache = !loadedOnce && snapshot.length > 0;
+      showCacheNote(hasCache
+        ? '云端暂时连不上，上面是你上次看到的内容。'
+        : '云端暂时连不上，等网络恢复后会自动刷新。');
+    });
 
     startRealtime();
 
