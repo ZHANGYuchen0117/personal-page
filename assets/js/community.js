@@ -39,9 +39,9 @@
   const DEFAULT_AVATAR =
     'data:image/svg+xml;utf8,' + encodeURIComponent(
       '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 40 40">' +
-      '<rect width="40" height="40" fill="#d8d8d4"/>' +
-      '<circle cx="20" cy="16" r="7" fill="#8a8a86"/>' +
-      '<path d="M6 37c2-7 8-11 14-11s12 4 14 11z" fill="#8a8a86"/>' +
+      '<rect width="40" height="40" fill="#d7d7d6"/>' +
+      '<circle cx="20" cy="16" r="7" fill="#898988"/>' +
+      '<path d="M6 37c2-7 8-11 14-11s12 4 14 11z" fill="#898988"/>' +
       '</svg>'
     );
 

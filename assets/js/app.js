@@ -4,7 +4,7 @@
   /* ---------- 主题切换 ---------- */
   function syncThemeColor(theme) {
     const meta = document.getElementById('themeColor');
-    if (meta) meta.setAttribute('content', theme === 'dark' ? '#141413' : '#f4f3f1');
+    if (meta) meta.setAttribute('content', theme === 'dark' ? '#141413' : '#f3f3f2');
   }
 
   const themeBtn = document.querySelector('[data-toggle-theme]');

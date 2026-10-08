@@ -139,17 +139,19 @@
 /* 被筛掉的消息：.community__msg 是 flex，必须显式盖掉 [hidden] */
 .community__msg[hidden] { display: none; }
 
-/* 命中关键词高亮 */
+/* 命中关键词高亮
+   V7 配色：整体改成黑白灰，原来这里是琥珀色（rgba(255,196,0)），是全站唯一一处彩色。
+   现在改用低透明度的暖灰叠一层，既压住了颜色，又保证命中处看得见。 */
 .community__text mark,
 .community__nick mark {
-  background: rgba(255, 196, 0, .38);
+  background: rgba(88, 82, 74, .28);
   color: inherit;
   border-radius: 2px;
   padding: 0 1px;
 }
 :root[data-theme="dark"] .community__text mark,
 :root[data-theme="dark"] .community__nick mark {
-  background: rgba(255, 196, 0, .28);
+  background: rgba(206, 198, 186, .26);
   color: var(--c-text);
 }
 
@@ -187,18 +189,18 @@
   padding: 6px 8px 6px 0;
   margin-bottom: 16px;
   scrollbar-width: thin;
-  scrollbar-color: var(--c-scroll-thumb, #deddd9) transparent;
+  scrollbar-color: var(--c-scroll-thumb, #dddcdb) transparent;
 }
 .community__list::-webkit-scrollbar { width: 10px; }
 .community__list::-webkit-scrollbar-track { background: transparent; }
 .community__list::-webkit-scrollbar-thumb {
-  background: var(--c-scroll-thumb, #deddd9);
+  background: var(--c-scroll-thumb, #dddcdb);
   border: 2px solid transparent;
   background-clip: padding-box;
   border-radius: 999px;
 }
 .community__list::-webkit-scrollbar-thumb:hover {
-  background: var(--c-scroll-thumb-hover, #cbcac6);
+  background: var(--c-scroll-thumb-hover, #cac9c8);
   border: 2px solid transparent;
   background-clip: padding-box;
 }

@@ -23,7 +23,7 @@
   padding-right: 10px;
   /* 滚动条常显：颜色比背景略深一点点（跟随主题变量） */
   scrollbar-width: thin;
-  scrollbar-color: var(--c-scroll-thumb, #deddd9) transparent;
+  scrollbar-color: var(--c-scroll-thumb, #dddcdb) transparent;
 }
 
 
@@ -35,13 +35,13 @@
   background: transparent;
 }
 .chat__stream::-webkit-scrollbar-thumb {
-  background: var(--c-scroll-thumb, #deddd9);
+  background: var(--c-scroll-thumb, #dddcdb);
   border: 2px solid transparent;      /* 两侧留白，滑块更细 */
   background-clip: padding-box;
   border-radius: 999px;
 }
 .chat__stream::-webkit-scrollbar-thumb:hover {
-  background: var(--c-scroll-thumb-hover, #cbcac6);
+  background: var(--c-scroll-thumb-hover, #cac9c8);
   border: 2px solid transparent;
   background-clip: padding-box;
 }

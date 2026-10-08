@@ -20,12 +20,12 @@
 <meta name="twitter:title" content="张聿辰的个人主页 · 微信消息风">
 <meta name="twitter:description" content="聊天式个人主页：AI 问答、社区留言、深色模式，手机也能用。">
 <meta name="twitter:image" content="https://zhangyuchen0117.github.io/personal-page/assets/img/avatar.jpg">
-<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='16' fill='%23141413'/%3E%3Crect x='12' y='16' width='40' height='24' rx='10' fill='%23f4f3f1'/%3E%3Ccircle cx='24' cy='28' r='2.8' fill='%23141413'/%3E%3Ccircle cx='32' cy='28' r='2.8' fill='%23141413'/%3E%3Ccircle cx='40' cy='28' r='2.8' fill='%23141413'/%3E%3Cpath d='M22 40h13l9 10V40z' fill='%23f4f3f1'/%3E%3C/svg%3E">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='16' fill='%23141413'/%3E%3Crect x='12' y='16' width='40' height='24' rx='10' fill='%23f3f3f2'/%3E%3Ccircle cx='24' cy='28' r='2.8' fill='%23141413'/%3E%3Ccircle cx='32' cy='28' r='2.8' fill='%23141413'/%3E%3Ccircle cx='40' cy='28' r='2.8' fill='%23141413'/%3E%3Cpath d='M22 40h13l9 10V40z' fill='%23f3f3f2'/%3E%3C/svg%3E">
 <link rel="apple-touch-icon" href="./assets/img/avatar.jpg">
 <link rel="preload" as="image" href="./assets/img/avatar.jpg">
 
 <!-- 移动端：让浏览器地址栏/状态栏颜色跟随主题 -->
-<meta name="theme-color" id="themeColor" content="#f4f3f1">
+<meta name="theme-color" id="themeColor" content="#f3f3f2">
 
 <!-- 主题初始化：必须在 CSS 之前，避免闪烁 -->
 <script>
@@ -44,7 +44,7 @@
   }
   document.documentElement.setAttribute('data-theme', theme);
   var meta = document.getElementById('themeColor');
-  if (meta) meta.setAttribute('content', theme === 'dark' ? '#141413' : '#f4f3f1');
+  if (meta) meta.setAttribute('content', theme === 'dark' ? '#141413' : '#f3f3f2');
 })();
 </script>
 
@@ -56,49 +56,55 @@
 <style>
   /* ==========================================================
    * 主题变量
+   * ==========================================================
+   * 配色：整体黑白灰，仅存的彩色是语义色（错误状态的红）。
+   * 灰阶统一带一点暖调（R ≥ G ≥ B，暖偏 1~2 级），但比早期更冷：
+   * 早期 --c-bg 暖偏 +3、滚动条 +5，偏米黄/奶油；现在压到 +1/+2，
+   * 更接近中性灰，同时保住一点暖意，不至于发蓝发冷。
+   * 改这里的值要同步 admin.html 那一套变量，以及 V3 的对比度审计（H1~H11）。
    * ========================================================== */
   :root,
   :root[data-theme="light"] {
-    --c-bg: #f4f3f1;
+    --c-bg: #f3f3f2;
     --c-text: #1a1a1a;
     --c-text-2: #333333;
     /* V3 对比度：原 #a6a6a3 在浅背景上只有 2.2:1，改为 4.6:1+ */
-    --c-text-3: #6e6e6b;
+    --c-text-3: #6d6d6c;
     --c-surface: #ffffff;
-    --c-surface-2: #f4f4f2;
-    --c-surface-3: #e8e8e6;
-    --c-border: #e8e8e5;
-    --c-border-2: #ededeb;
+    --c-surface-2: #f4f4f3;
+    --c-surface-3: #e8e8e7;
+    --c-border: #e7e7e6;
+    --c-border-2: #ededec;
     --c-invert-bg: #1a1a1a;
     --c-invert-fg: #ffffff;
     --c-mask: rgba(10, 10, 10, .36);
     --c-shadow-sm: rgba(0, 0, 0, .04);
     --c-shadow-lg: rgba(0, 0, 0, .2);
     /* 滚动条：比背景略深一点点 */
-    --c-scroll-thumb: #deddd9;
-    --c-scroll-thumb-hover: #cbcac6;
+    --c-scroll-thumb: #dddcdb;
+    --c-scroll-thumb-hover: #cac9c8;
     --c-check-icon: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23ffffff' stroke-width='4' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='20 6 9 17 4 12'/%3E%3C/svg%3E");
   }
 
   :root[data-theme="dark"] {
     --c-bg: #141413;
-    --c-text: #f0f0ee;
-    --c-text-2: #c8c8c6;
+    --c-text: #f0f0ef;
+    --c-text-2: #c8c8c7;
     /* V3 对比度：原 #7a7a78 在 #232322 上只有 3.7:1，改为 4.9:1+ */
-    --c-text-3: #90908e;
+    --c-text-3: #90908f;
     --c-surface: #1e1e1d;
     --c-surface-2: #232322;
     --c-surface-3: #2c2c2b;
     --c-border: #2c2c2b;
     --c-border-2: #333332;
-    --c-invert-bg: #f0f0ee;
+    --c-invert-bg: #f0f0ef;
     --c-invert-fg: #141413;
     --c-mask: rgba(0, 0, 0, .66);
     --c-shadow-sm: rgba(0, 0, 0, .3);
     --c-shadow-lg: rgba(0, 0, 0, .55);
     /* 滚动条：暗色下用略亮一点的灰，保证可见 */
-    --c-scroll-thumb: #333331;
-    --c-scroll-thumb-hover: #454442;
+    --c-scroll-thumb: #333332;
+    --c-scroll-thumb-hover: #444443;
     --c-check-icon: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23141413' stroke-width='4' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='20 6 9 17 4 12'/%3E%3C/svg%3E");
   }
 
@@ -588,7 +594,7 @@
       <div class="reg-avatar">
         <label for="regAvatar">
           <img id="regAvatarPreview"
-               src="data:image/svg+xml;utf8,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 40 40'%3E%3Crect width='40' height='40' fill='%23d8d8d4'/%3E%3Ccircle cx='20' cy='16' r='7' fill='%238a8a86'/%3E%3Cpath d='M6 37c2-7 8-11 14-11s12 4 14 11z' fill='%238a8a86'/%3E%3C/svg%3E"
+               src="data:image/svg+xml;utf8,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 40 40'%3E%3Crect width='40' height='40' fill='%23d7d7d6'/%3E%3Ccircle cx='20' cy='16' r='7' fill='%23898988'/%3E%3Cpath d='M6 37c2-7 8-11 14-11s12 4 14 11z' fill='%23898988'/%3E%3C/svg%3E"
                alt="" />
           <span>点击选择头像</span>
         </label>
